@@ -9,8 +9,8 @@
  * NON incollare qui la service_role key.
  */
 
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_URL = 'https://kebjzcjtcgdmgdhudbjm.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_YtPN7DD1BarOz5uOVhjkmw_YuT7D2Tg';
 
 export const APP_TITLE = 'Registro spedizioni';
 export const APP_YEAR = '2026';
