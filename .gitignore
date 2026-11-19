@@ -1,0 +1,22 @@
+# Dati reali: NON caricare su GitHub
+private/
+supabase/seed.sql
+
+# File sorgente e backup locali
+*.xlsx
+*.xls
+*.csv
+*.numbers
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+node_modules/
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc

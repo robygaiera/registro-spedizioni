@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Registro spedizioni 2026: tabella filtrabile e modificabile.">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Registro spedizioni 2026</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314161a'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='14' font-weight='700' fill='%23fff' text-anchor='middle'%3E26%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+  <noscript>
+    <section class="setup">
+      <div class="setup-card">
+        <h1>JavaScript richiesto</h1>
+        <p class="muted">Attiva JavaScript nel browser per usare il registro spedizioni.</p>
+      </div>
+    </section>
+  </noscript>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="auth-view" class="auth" hidden>
+    <div class="auth-art">
+      <div class="auth-art-head">
+        <span class="mark mark-light">26</span>
+        <span class="wordmark">Registro spedizioni</span>
+      </div>
+      <div class="auth-art-body">
+        <p class="eyebrow eyebrow-light">Anno 2026</p>
+        <p class="auth-year" aria-hidden="true">2026</p>
+        <p class="auth-quote">Ogni spedizione,<br>un colpo d'occhio.</p>
+      </div>
+      <p class="auth-art-foot">Accesso riservato</p>
+    </div>
+
+    <div class="auth-panel">
+      <form id="login-form" class="auth-card" novalidate>
+        <h1>Accedi</h1>
+        <p class="muted auth-sub">Inserisci le credenziali del tuo account.</p>
+
+        <label class="field">
+          <span>Email</span>
+          <input id="login-email" name="email" type="email" autocomplete="username" inputmode="email" required>
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        </label>
+
+        <p id="login-error" class="form-error" role="alert" hidden></p>
+        <button id="login-submit" class="btn btn-primary btn-block" type="submit">Entra</button>
+        <button id="login-demo" class="btn btn-ghost btn-block" type="button" hidden>Prova la demo senza account</button>
+      </form>
+      <p class="auth-foot"><span data-company>Silent System</span> &middot; Registro spedizioni 2026</p>
+    </div>
+  </section>
+
+  <!-- ============ SETUP (Supabase non configurato) ============ -->
+  <section id="setup-view" class="setup" hidden>
+    <div class="setup-card">
+      <div class="setup-head">
+        <span class="mark">26</span>
+        <div>
+          <p class="eyebrow">Configurazione</p>
+          <h1>Collega Supabase</h1>
+        </div>
+      </div>
+      <p class="muted">Il sito non contiene dati. Il registro vive su Supabase e l'accesso è protetto da email e password.</p>
+      <ol class="steps">
+        <li>Crea un progetto gratuito su <strong>supabase.com</strong>.</li>
+        <li>Nel <strong>SQL Editor</strong> esegui <code>supabase/schema.sql</code>, poi <code>private/seed.sql</code>.</li>
+        <li>In <strong>Authentication &rarr; Providers &rarr; Email</strong> disattiva <em>Allow new users to sign up</em> e crea gli utenti da <strong>Users</strong>.</li>
+        <li>Copia <strong>Project URL</strong> e <strong>anon public key</strong> in <code>assets/config.js</code>.</li>
+      </ol>
+      <pre class="code">export const SUPABASE_URL = 'https://xxxx.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
+      <div class="setup-actions">
+        <button id="setup-demo" class="btn btn-primary" type="button">Apri la demo</button>
+        <a class="btn btn-ghost" href="README.md" target="_blank" rel="noopener">Leggi il README</a>
+      </div>
+      <p class="fineprint">La anon key è pensata per essere pubblica: la protezione dei dati è nelle policy RLS di Supabase. Non inserire mai la service_role key.</p>
+    </div>
+  </section>
+
+  <!-- ============ APP ============ -->
+  <div id="app" class="app" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark">26</span>
+        <div class="brand-text">
+          <h1 id="app-title">Registro spedizioni</h1>
+          <p><span id="app-year">2026</span> <span class="dot">&middot;</span> <span id="user-email">—</span></p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button id="refresh" class="icon-btn" type="button" title="Aggiorna i dati" aria-label="Aggiorna i dati">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+        </button>
+        <button id="logout" class="btn btn-ghost btn-sm" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Esci
+        </button>
+      </div>
+    </header>
+
+    <div id="demo-banner" class="demo-banner" hidden>
+      <span><strong>Modalità demo.</strong> Dati di esempio, modifiche solo in questo browser.</span>
+      <span class="demo-banner-actions">
+        <button id="demo-reset" class="link" type="button">Ripristina</button>
+      </span>
+    </div>
+
+    <main class="shell">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="search" type="search" placeholder="Cerca cliente, indirizzo, offerta, modello, note…" autocomplete="off">
+        </div>
+
+        <select id="filter-month" aria-label="Filtra per mese">
+          <option value="">Tutti i mesi</option>
+        </select>
+        <select id="filter-stato" aria-label="Filtra per stato">
+          <option value="">Tutti gli stati</option>
+          <option value="Aperto">Aperti</option>
+          <option value="Chiuso">Chiusi</option>
+          <option value="Annullato">Annullati</option>
+        </select>
+        <select id="filter-modello" aria-label="Filtra per modello">
+          <option value="">Tutti i modelli</option>
+        </select>
+        <button id="reset-filters" class="btn btn-ghost btn-sm" type="button" disabled>Azzera</button>
+
+        <div class="toolbar-spacer"></div>
+
+        <button id="export" class="btn btn-ghost btn-sm" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          CSV
+        </button>
+        <button id="new-entry" class="btn btn-primary btn-sm" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          Nuova spedizione
+        </button>
+      </div>
+
+      <div class="meta-row">
+        <p id="result-count" class="result-count" aria-live="polite">Caricamento…</p>
+        <span id="filter-hint" class="filter-hint" hidden></span>
+        <select id="sort-mobile" aria-label="Ordina il registro">
+          <option value="data_uscita:desc">Più recenti</option>
+          <option value="data_uscita:asc">Più vecchie</option>
+          <option value="cliente:asc">Cliente A–Z</option>
+          <option value="colli:desc">Più colli</option>
+          <option value="modello:asc">Modello A–Z</option>
+          <option value="stato:asc">Stato</option>
+        </select>
+      </div>
+
+      <div id="load-error" class="alert" hidden>
+        <span id="load-error-text">Impossibile caricare il registro.</span>
+        <button id="retry" class="btn btn-ghost btn-sm" type="button">Riprova</button>
+      </div>
+
+      <div class="table-wrap">
+        <table id="table">
+          <thead>
+            <tr>
+              <th class="col-date" aria-sort="none"><button class="sort-btn" data-sort="data_uscita">Data uscita<span class="arrow"></span></button></th>
+              <th class="col-client"><button class="sort-btn" data-sort="cliente">Cliente<span class="arrow"></span></button></th>
+              <th class="col-offer">N. offerta</th>
+              <th class="col-pickup"><button class="sort-btn" data-sort="data_ritiro">Ritiro<span class="arrow"></span></button></th>
+              <th class="col-packages"><button class="sort-btn" data-sort="colli">Colli<span class="arrow"></span></button></th>
+              <th class="col-model"><button class="sort-btn" data-sort="modello">Modello<span class="arrow"></span></button></th>
+              <th class="col-deposit">Cauzione</th>
+              <th class="col-status"><button class="sort-btn" data-sort="stato">Stato<span class="arrow"></span></button></th>
+              <th class="col-notes">Note</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="table-loading" class="table-loading" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Caricamento registro…</span>
+        </div>
+        <div id="empty-state" class="empty-state" hidden>
+          <p class="empty-title">Nessuna spedizione trovata</p>
+          <p class="muted">Prova a cambiare ricerca o filtri.</p>
+          <button id="empty-reset" class="btn btn-ghost btn-sm" type="button">Azzera i filtri</button>
+        </div>
+      </div>
+
+      <div class="pager">
+        <button id="load-more" class="btn btn-ghost btn-sm" type="button" hidden>Mostra altre</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ DRAWER / FORM ============ -->
+  <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+  <aside id="drawer" class="drawer" aria-hidden="true" aria-labelledby="drawer-title">
+    <div class="drawer-head">
+      <div>
+        <p class="eyebrow">Registro 2026</p>
+        <h2 id="drawer-title">Modifica spedizione</h2>
+      </div>
+      <button id="drawer-close" class="icon-btn" type="button" aria-label="Chiudi">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <form id="entry-form" class="drawer-body" novalidate>
+      <input type="hidden" id="f-id">
+
+      <div class="form-grid">
+        <label class="field">
+          <span>Data uscita</span>
+          <input type="date" id="f-data-uscita">
+        </label>
+        <label class="field">
+          <span>Data ritiro</span>
+          <input type="date" id="f-data-ritiro">
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Cliente</span>
+        <input type="text" id="f-cliente" placeholder="Nome cliente reale" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span>Indirizzo spedizione</span>
+        <input type="text" id="f-indirizzo" placeholder="Destinazione o fermo deposito" autocomplete="off">
+      </label>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>N. offerta</span>
+          <input type="text" id="f-offerta" placeholder="Es. 133089" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>N. colli</span>
+          <input type="number" id="f-colli" min="0" step="1" inputmode="numeric" placeholder="0">
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Modello cuffie</span>
+        <input type="text" id="f-modello" list="modelli-list" placeholder="Es. 839 V2" autocomplete="off">
+        <datalist id="modelli-list"></datalist>
+      </label>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>Cauzione</span>
+          <input type="text" id="f-cauzione" placeholder="Importo, NO, ONLINE…" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>Stato</span>
+          <select id="f-stato">
+            <option value="Aperto">Aperto</option>
+            <option value="Chiuso">Chiuso</option>
+            <option value="Annullato">Annullato</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Note</span>
+        <textarea id="f-note" rows="4" placeholder="Note operative, DDT, rientri…"></textarea>
+      </label>
+
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+      <p class="fineprint form-hint">I campi data e colli possono restare vuoti. Almeno uno tra cliente e indirizzo è obbligatorio.</p>
+    </form>
+
+    <div class="drawer-foot">
+      <button id="entry-delete" class="btn btn-danger btn-sm" type="button" hidden>Elimina</button>
+      <div class="toolbar-spacer"></div>
+      <button id="entry-cancel" class="btn btn-ghost btn-sm" type="button">Annulla</button>
+      <button id="entry-save" class="btn btn-primary btn-sm" type="submit" form="entry-form">Salva</button>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="assets/app.js"></script>
+</body>
+</html>
