@@ -1,5 +1,7 @@
 # Registro spedizioni 2026
 
+**Demo online:** <https://robygaiera.github.io/registro-spedizioni/?demo=1>
+
 Cruscotto web del registro spedizioni: tabella filtrabile, modificabile e condivisa.
 Sito statico (HTML/CSS/JS) su GitHub Pages, dati e login su Supabase.
 
