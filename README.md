@@ -167,6 +167,8 @@ Poi esegui di nuovo `private/seed.sql`. Attenzione: il truncate cancella anche l
 
 Il parser legge il foglio `2026` a partire dalla riga 26, ricostruisce le celle unite, scarta le righe vuote e normalizza i modelli in maiuscolo. Se il layout del foglio cambia, aggiorna le costanti in cima a `tools/build_data.py`.
 
+Se una cella della colonna data contiene testo libero (per esempio “aspettare OK di Emanuele”), il campo data viene lasciato vuoto e il testo viene riportato nelle note: PostgreSQL rifiuta il testo in una colonna `date`. Lo script controlla date, colli e stato prima di generare il seed.
+
 ---
 
 ## 6. Struttura del progetto

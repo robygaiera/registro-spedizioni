@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_XLSX = Path.home() / "Downloads" / "Registro SPEDIZIONI 2026.xlsx"
 SHEET = "2026"
 FIRST_ROW = 26  # dove inizia il blocco 2026 nel foglio
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 # colonne del foglio 2026 (1-based)
 COL_CAUZIONE = 1
@@ -53,6 +54,19 @@ def is_closed(note):
         k in n
         for k in ("rientrat", "riconsegnat", "annull", "chiusura virtuale")
     )
+
+
+def date_only(value):
+    """Restituisce una data ISO solo se il valore e' davvero una data.
+
+    Nel foglio alcune celle 'data ritiro' contengono frasi ("aspettare OK
+    di Emanuele"): in quel caso la data resta vuota e il testo va nelle note.
+    """
+    if isinstance(value, (dt.datetime, dt.date)):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, str) and DATE_RE.match(value.strip()):
+        return value.strip()
+    return None
 
 
 def sql_literal(value):
@@ -94,13 +108,32 @@ def main():
         if not any(v not in (None, "", "  ") for v in core):
             continue
 
-        data_uscita = clean(get(r, COL_DATA_USCITA))
-        data_ritiro = clean(get(r, COL_DATA_RITIRO))
+        raw_uscita = get(r, COL_DATA_USCITA)
+        raw_ritiro = get(r, COL_DATA_RITIRO)
+        raw_uscita_text = clean(raw_uscita)
+
         # scarta una eventuale riga di intestazione ripetuta
-        if data_uscita and data_uscita.upper().startswith("DATA"):
+        if raw_uscita_text and raw_uscita_text.upper().startswith("DATA"):
             continue
 
+        data_uscita = date_only(raw_uscita)
+        data_ritiro = date_only(raw_ritiro)
         note = clean(get(r, COL_NOTE))
+
+        # Se una data conteneva testo libero, il testo non va perso: finisce
+        # nelle note, mentre il campo date resta vuoto.
+        for label, raw, parsed in (
+            ("Uscita", raw_uscita, data_uscita),
+            ("Ritiro", raw_ritiro, data_ritiro),
+        ):
+            if parsed:
+                continue
+            text = clean(raw)
+            if not text:
+                continue
+            if note and text.lower() in note.lower():
+                continue
+            note = f"{note} | {label}: {text}" if note else f"{label}: {text}"
         # Nel foglio la riga chiusa e' barrata. Le righe parzialmente barrate
         # (1-3 celle) sono per lo piu' lavoro in corso: contano da 5 celle su 7.
         barrato = sum(
@@ -134,6 +167,18 @@ def main():
                 "note": note,
             }
         )
+
+    # controllo finale: il database rifiuterebbe qualsiasi valore fuori formato
+    for index, row in enumerate(rows, start=1):
+        for key in ("data_uscita", "data_ritiro"):
+            if row[key] is not None and not DATE_RE.match(row[key]):
+                sys.exit(f"Data non valida alla riga {index}: {row[key]!r}")
+        if row["colli"] is not None and (
+            not isinstance(row["colli"], int) or row["colli"] < 0
+        ):
+            sys.exit(f"Numero colli non valido alla riga {index}: {row['colli']!r}")
+        if row["stato"] not in ("Aperto", "Chiuso"):
+            sys.exit(f"Stato non valido alla riga {index}: {row['stato']!r}")
 
     # ordina per data (le righe senza data in fondo) e assegna un id stabile
     rows.sort(key=lambda x: (x["data_uscita"] is None, x["data_uscita"] or ""), reverse=False)
