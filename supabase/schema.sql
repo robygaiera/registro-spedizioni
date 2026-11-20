@@ -20,6 +20,9 @@ create table if not exists public.spedizioni (
                     )
                   ),
   ddt_rientro     text,
+  ddt_uscita      text,
+  corriere        text,
+  peso            numeric(10, 2),
   ritiro_impostato boolean not null default false,
   rientrato       boolean not null default false,
   colli           integer check (colli is null or colli >= 0),
@@ -45,6 +48,8 @@ create index if not exists spedizioni_data_ritiro_idx
   on public.spedizioni (data_ritiro);
 create index if not exists spedizioni_rientro_effettivo_idx
   on public.spedizioni (rientro_effettivo);
+create index if not exists spedizioni_ddt_uscita_idx
+  on public.spedizioni (ddt_uscita);
 
 comment on column public.spedizioni.data_ritiro is
   'Data di impostazione del ritiro (primo giorno lavorativo post offerta)';
@@ -56,6 +61,12 @@ comment on column public.spedizioni.ritiro_impostato is
   'Spunta: impostazione del ritiro confermata';
 comment on column public.spedizioni.rientrato is
   'Spunta: materiale rientrato in magazzino';
+comment on column public.spedizioni.ddt_uscita is
+  'Numero del DDT di uscita';
+comment on column public.spedizioni.corriere is
+  'Corriere o vettore indicato sul DDT';
+comment on column public.spedizioni.peso is
+  'Peso in kg indicato sul DDT';
 
 -- ------------------------------------------------------------
 -- updated_at automatico
