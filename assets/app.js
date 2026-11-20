@@ -825,11 +825,11 @@ function rowHtml(row) {
     <td class="col-date" data-label="Data">
       <span class="date-cell${row.data_uscita ? '' : ' is-empty'}">${row.data_uscita ? esc(fmtShort(row.data_uscita)) : '—'}</span>
     </td>
+    <td class="col-notes" data-label="Note"${row.note ? '' : ' data-empty="true"'}><span class="note-cell${row.note ? '' : ' is-empty'}" title="${esc(row.note ?? '')}">${row.note ? esc(row.note) : '—'}</span></td>
     <td class="col-client" data-label="Cliente">
       <span class="client-main">${esc(main)}</span>
       ${sub ? `<span class="client-sub">${esc(sub)}</span>` : ''}
     </td>
-    <td class="col-notes" data-label="Note"${row.note ? '' : ' data-empty="true"'}><span class="note-cell${row.note ? '' : ' is-empty'}" title="${esc(row.note ?? '')}">${row.note ? esc(row.note) : '—'}</span></td>
     <td class="col-offer offer-cell" data-label="Offerta"${row.numero_offerta ? '' : ' data-empty="true"'}>${row.numero_offerta ? esc(row.numero_offerta) : '—'}</td>
     <td class="col-pickup return-cell" data-label="Ritiro"${returnEmpty ? ' data-empty="true"' : ''}>${returnCell}</td>
     <td class="col-packages packages-cell" data-label="Colli"${row.colli === null ? ' data-empty="true"' : ''}>${row.colli === null ? '—' : esc(nf.format(row.colli))}</td>

@@ -1012,13 +1012,13 @@ tbody tr.is-returned .client-main { color: #4b4e53; }
   tbody td.col-date { grid-column: 1; grid-row: 2; }
   tbody td.col-status { grid-column: 2; grid-row: 2; justify-self: end; }
   tbody td.col-status::before { display: none; }
-  tbody td.col-client { grid-column: 1 / -1; grid-row: 3; padding-bottom: 2px; }
+  tbody td.col-client { grid-column: 1 / -1; grid-row: 4; padding-bottom: 2px; }
   tbody td.col-client::before { display: none; }
-  tbody td.col-offer { grid-column: 1; grid-row: 4; }
-  tbody td.col-pickup { grid-column: 2; grid-row: 4; }
-  tbody td.col-packages { grid-column: 1; grid-row: 5; }
-  tbody td.col-model { grid-column: 2; grid-row: 5; }
-  tbody td.col-notes { grid-column: 1 / -1; grid-row: 6; text-align: left; }
+  tbody td.col-notes { grid-column: 1 / -1; grid-row: 3; text-align: left; }
+  tbody td.col-offer { grid-column: 1; grid-row: 5; }
+  tbody td.col-pickup { grid-column: 2; grid-row: 5; }
+  tbody td.col-packages { grid-column: 1; grid-row: 6; }
+  tbody td.col-model { grid-column: 2; grid-row: 6; }
   tbody td[data-empty="true"] { display: none; }
   .client-main { font-size: 14.5px; white-space: normal; }
   .client-sub { white-space: normal; }
