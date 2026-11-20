@@ -77,15 +77,29 @@ create index if not exists spedizioni_rientro_effettivo_idx
 -- ------------------------------------------------------------
 -- Allinea i dati gia presenti alle due spunte
 -- ------------------------------------------------------------
-update public.spedizioni
-set ritiro_impostato = true
-where data_ritiro is not null
-  and ritiro_impostato = false;
-
+-- Chiuse o con data di rientro: rientrate
 update public.spedizioni
 set rientrato = true
 where (stato = 'Chiuso' or rientro_effettivo is not null)
   and rientrato = false;
+
+update public.spedizioni
+set ritiro_impostato = true
+where (stato = 'Chiuso' or rientro_effettivo is not null)
+  and ritiro_impostato = false;
+
+-- Impostazioni con data passata: presumibilmente gia fatte
+update public.spedizioni
+set ritiro_impostato = true
+where data_ritiro < current_date
+  and ritiro_impostato = false;
+
+-- Impostazioni con data di oggi o futura: ancora da fare
+update public.spedizioni
+set ritiro_impostato = false
+where stato in ('Aperto', 'Ritiro impostato')
+  and data_ritiro >= current_date
+  and ritiro_impostato = true;
 
 update public.spedizioni
 set stato = 'Ritiro impostato'
