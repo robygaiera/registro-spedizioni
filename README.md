@@ -130,6 +130,7 @@ Deve mostrare `private/` come ignorata. Se `private/seed.sql` o `private/registr
 - **Filtrare**: mese, stato (Aperto/Ritiro impostato/Rientrato/Chiuso/Annullato), modello. Il pulsante **Azzera** rimuove i filtri ma non cambia la vista.
 - **Viste**: in alto scegli **Tutte**, **Ritiri da impostare**, **Da rientrare**, **Da chiudere** o **Archivio**. I numeri accanto sono i totali.
 - **Ritiri da impostare**: vista giornaliera. Di default apre il primo giorno lavorativo successivo a oggi (se oggi è lunedì 23, mostra martedì 24). Le frecce cambiano giorno, il campo data permette una data precisa; **Mostra anche completati** include le spunte già fatte. Spuntando **Imp. ritiro** la riga esce dalla lista.
+- **Importa DDT**: dal PDF digitale del DDT di uscita compila l’anteprima di una nuova spedizione. Vedi la sezione dedicata qui sotto.
 - **Modificare**: clic su una riga → pannello laterale → **Salva**. Modifiche immediate per tutti.
 - **Due spunte**: nel pannello, **Impostazione ritiro** e **Rientrato**. Lo stato si aggiorna da solo: nessuna spunta = Aperto, prima spunta = Ritiro impostato, seconda = Rientrato.
 - **Date**: la data accanto a **Impostazione ritiro** è il giorno in cui è stato impostato il ritiro (primo giorno lavorativo dopo l’offerta). La data accanto a **Rientrato** è il giorno in cui il materiale è tornato.
@@ -162,19 +163,46 @@ Nel foglio Excel le righe chiuse sono **barrate** (`BARRATO = c'è il DDT di chi
 
 Delle 683 righe aperte, quelle con una data di impostazione già passata risultano **Ritiro impostato**; quelle con data odierna o futura restano **Aperte** e compaiono nella vista **Ritiri da impostare**. Le righe senza data restano **Aperte**. La vista **Da rientrare** serve a bonificare l’arretrato: apri la riga e spunta **Rientrato** quando il materiale è tornato.
 
+### Importare un DDT di uscita
+
+Dalla pagina **Registro**:
+
+1. Clicca **Importa DDT**.
+2. Scegli il PDF del DDT di uscita.
+3. L’app apre la nuova spedizione già compilata: controlla, modifica se serve, poi **Salva**.
+
+Campi compilati dal DDT:
+
+| Campo registro | Origine nel DDT |
+|---|---|
+| Data uscita | Data del DDT |
+| Cliente | Destinatario (ragione sociale) |
+| Destinazione | Luogo di consegna (nome, non indirizzo fisico) |
+| N. offerta | Rif. OFF # |
+| DDT uscita | Numero DDT |
+| Corriere / vettore | Vettore |
+| Colli | N° Colli |
+| Peso | Kg |
+| Modello | Riepilogo degli articoli con quantità |
+| Impostazione ritiro | Primo giorno lavorativo dopo il DDT (modificabile) |
+| Note | Lasciate vuote |
+
+L’import crea **una riga per DDT**, non una per articolo. Non salva niente da solo: apre sempre l’anteprima. Funziona con **PDF digitali** (testo selezionabile) del template LEM; le foto/scan richiedono OCR e non sono ancora supportate. Se arrivano DDT di altri fornitori, mandane un esempio per estendere il parser.
+
 ---
 
 ## 5. Aggiornare i dati dall'Excel
 
 ### Progetto già online: applica la migrazione
 
-Se la tabella `spedizioni` esiste già (come nel progetto online), esegui nel SQL Editor:
+Se la tabella `spedizioni` esiste già (come nel progetto online), esegui nel SQL Editor, nell’ordine:
 
 ```text
 supabase/migrations/002_rientri.sql
+supabase/migrations/003_ddt_uscita.sql
 ```
 
-Aggiunge i campi del rientro, le due spunte e lo stato **Ritiro impostato** senza cancellare nessun dato. Le impostazioni con data passata vengono segnate come fatte; quelle di oggi o future restano da fare. È idempotente: se avevi già eseguito una versione precedente della migrazione, rieseguila. `schema.sql` serve invece per un’installazione nuova.
+`002` aggiunge i campi del rientro, le due spunte e lo stato **Ritiro impostato**. `003` aggiunge **DDT uscita**, **Corriere** e **Peso**. Se hai già eseguito `002`, esegui solo `003`. Sono idempotenti. `schema.sql` serve invece per un’installazione nuova.
 
 ### Riesportare dal file Excel
 
@@ -193,6 +221,7 @@ Genera:
 | `data/demo.json` | stessi volumi, ma nomi/indirizzi/note finti | versionato |
 | `supabase/schema.sql` | struttura e sicurezza per installazione nuova | versionato |
 | `supabase/migrations/002_rientri.sql` | aggiornamento del database esistente | versionato |
+| `supabase/migrations/003_ddt_uscita.sql` | campi DDT uscita, corriere e peso | versionato |
 
 Per **sostituire** i dati su Supabase (dopo un backup CSV):
 
@@ -222,7 +251,8 @@ registro-spedizioni/
 ├── supabase/
 │   ├── schema.sql          tabella, indici, trigger, RLS (installazione nuova)
 │   └── migrations/
-│       └── 002_rientri.sql aggiornamento del database esistente
+│       ├── 002_rientri.sql aggiornamento del database esistente
+│       └── 003_ddt_uscita.sql campi DDT uscita, corriere e peso
 ├── tools/
 │   └── build_data.py       Excel -> seed + demo
 ├── private/                DATI REALI - ignorata da git
@@ -246,6 +276,9 @@ registro-spedizioni/
 | `rientro_effettivo` | date | quando il materiale è tornato in magazzino |
 | `modalita_rientro` | text | Etichetta nostra / A carico cliente / Ritiro nostro / Di persona / Altro |
 | `ddt_rientro` | text | numero DDT di rientro |
+| `ddt_uscita` | text | numero DDT di uscita |
+| `corriere` | text | corriere o vettore |
+| `peso` | numeric | peso in kg |
 | `ritiro_impostato` | boolean | prima spunta: impostazione confermata (date future: parte da `false`) |
 | `rientrato` | boolean | seconda spunta: materiale rientrato |
 | `colli` | integer | null se assente |

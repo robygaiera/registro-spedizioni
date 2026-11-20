@@ -176,6 +176,10 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
             <p id="page-subtitle">Tutte le spedizioni 2026</p>
           </div>
           <div class="page-actions">
+            <button id="import-ddt" class="btn btn-outline" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>
+              <span id="import-ddt-label">Importa DDT</span>
+            </button>
             <button id="export" class="btn btn-outline" type="button">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
               CSV
@@ -184,6 +188,7 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               Nuova spedizione
             </button>
+            <input type="file" id="ddt-file-input" accept="application/pdf,.pdf" hidden>
           </div>
         </div>
 
@@ -348,7 +353,7 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
         <input type="text" id="f-indirizzo" placeholder="Ragione sociale o nome della destinazione" autocomplete="off">
       </label>
 
-      <div class="form-grid">
+      <div class="form-grid form-grid-3">
         <label class="field">
           <span>N. offerta</span>
           <input type="text" id="f-offerta" placeholder="Es. 133089" autocomplete="off">
@@ -356,6 +361,21 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
         <label class="field">
           <span>N. colli</span>
           <input type="number" id="f-colli" min="0" step="1" inputmode="numeric" placeholder="0">
+        </label>
+        <label class="field">
+          <span>Peso (kg)</span>
+          <input type="number" id="f-peso" min="0" step="0.01" inputmode="decimal" placeholder="0">
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>DDT uscita</span>
+          <input type="text" id="f-ddt-uscita" placeholder="Es. 2026-2453 MI" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>Corriere / vettore</span>
+          <input type="text" id="f-corriere" placeholder="Corriere o vettore" autocomplete="off">
         </label>
       </div>
 

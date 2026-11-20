@@ -88,6 +88,9 @@ const el = {
   pickupCount: $('#pickup-count'),
   exportBtn: $('#export'),
   newEntry: $('#new-entry'),
+  importDdt: $('#import-ddt'),
+  importDdtLabel: $('#import-ddt-label'),
+  ddtFileInput: $('#ddt-file-input'),
   resultCount: $('#result-count'),
   loadError: $('#load-error'),
   loadErrorText: $('#load-error-text'),
@@ -117,6 +120,9 @@ const el = {
   fRientroEffettivo: $('#f-rientro-effettivo'),
   fModalita: $('#f-modalita'),
   fDdtRientro: $('#f-ddt-rientro'),
+  fDdtUscita: $('#f-ddt-uscita'),
+  fCorriere: $('#f-corriere'),
+  fPeso: $('#f-peso'),
   fNote: $('#f-note'),
   formError: $('#form-error'),
   drawerStato: $('#drawer-stato'),
@@ -379,6 +385,14 @@ function wireEvents() {
 
   el.newEntry.addEventListener('click', () => openDrawer(null));
   el.exportBtn.addEventListener('click', exportCsv);
+  el.importDdt.addEventListener('click', () => {
+    el.ddtFileInput.value = '';
+    el.ddtFileInput.click();
+  });
+  el.ddtFileInput.addEventListener('change', () => {
+    const file = el.ddtFileInput.files?.[0];
+    if (file) importDdtFile(file);
+  });
 
   $$('.sort-btn').forEach((button) => {
     button.addEventListener('click', () => {
@@ -659,7 +673,7 @@ function normalizeRow(row) {
 
   for (const key of [
     'indirizzo', 'cliente', 'numero_offerta', 'modello',
-    'modalita_rientro', 'ddt_rientro', 'note',
+    'modalita_rientro', 'ddt_rientro', 'ddt_uscita', 'corriere', 'note',
   ]) {
     out[key] = row[key] === null || row[key] === undefined || String(row[key]).trim() === ''
       ? null
@@ -670,6 +684,11 @@ function normalizeRow(row) {
     ? null
     : Number(row.colli);
   out.colli = Number.isFinite(colli) && colli >= 0 ? Math.trunc(colli) : null;
+
+  const peso = row.peso === null || row.peso === undefined || row.peso === ''
+    ? null
+    : Number(row.peso);
+  out.peso = Number.isFinite(peso) && peso >= 0 ? peso : null;
   return out;
 }
 
@@ -761,6 +780,9 @@ function getFiltered() {
         row.stato,
         row.modalita_rientro,
         row.ddt_rientro,
+        row.ddt_uscita,
+        row.corriere,
+        row.peso,
         row.data_uscita,
         row.data_uscita ? itDate(row.data_uscita) : '',
         row.data_ritiro,
@@ -964,6 +986,7 @@ function rowHtml(row) {
     ${taskCell}
     <td class="col-date" data-label="Data">
       <span class="date-cell${row.data_uscita ? '' : ' is-empty'}">${row.data_uscita ? esc(fmtShort(row.data_uscita)) : '—'}</span>
+      ${row.ddt_uscita ? `<span class="date-sub">DDT ${esc(row.ddt_uscita)}</span>` : ''}
     </td>
     <td class="col-notes" data-label="Note"${row.note ? '' : ' data-empty="true"'}><span class="note-cell${row.note ? '' : ' is-empty'}" title="${esc(row.note ?? '')}">${row.note ? esc(row.note) : '—'}</span></td>
     <td class="col-client" data-label="Cliente">
@@ -1094,7 +1117,10 @@ function openDrawer(row) {
   setField(el.fIndirizzo, row?.indirizzo ?? '');
   setField(el.fOfferta, row?.numero_offerta ?? '');
   setField(el.fColli, row?.colli ?? '');
+  setField(el.fPeso, row?.peso ?? '');
   setField(el.fModello, row?.modello ?? '');
+  setField(el.fDdtUscita, row?.ddt_uscita ?? '');
+  setField(el.fCorriere, row?.corriere ?? '');
   setField(el.fRientroEffettivo, row?.rientro_effettivo ?? '');
   setField(el.fModalita, row?.modalita_rientro ?? '');
   setField(el.fDdtRientro, row?.ddt_rientro ?? '');
@@ -1297,6 +1323,11 @@ async function handleSave(event) {
     el.fColli.focus();
     return;
   }
+  if (payload.peso !== null && (!Number.isFinite(payload.peso) || payload.peso < 0)) {
+    showFormError('Il peso deve essere un numero maggiore o uguale a zero.');
+    el.fPeso.focus();
+    return;
+  }
 
   setSaving(true);
   try {
@@ -1327,6 +1358,7 @@ async function handleSave(event) {
 function readForm() {
   const value = (input) => input.value.trim();
   const colliRaw = value(el.fColli);
+  const pesoRaw = value(el.fPeso);
   const modello = value(el.fModello);
   const ritiroImpostato = el.fRitiroFatto.checked;
   const rientrato = el.fRientrato.checked;
@@ -1340,7 +1372,10 @@ function readForm() {
     indirizzo: value(el.fIndirizzo) || null,
     numero_offerta: value(el.fOfferta) || null,
     colli: colliRaw === '' ? null : Number(colliRaw),
+    peso: pesoRaw === '' ? null : Number(pesoRaw),
     modello: modello ? modello.replace(/\s+/g, ' ').toUpperCase() : null,
+    ddt_uscita: value(el.fDdtUscita) || null,
+    corriere: value(el.fCorriere) || null,
     stato: currentStato(),
     rientro_effettivo: rientroEffettivo,
     modalita_rientro: value(el.fModalita) || null,
@@ -1386,6 +1421,219 @@ async function handleDelete() {
   }
 }
 
+async function importDdtFile(file) {
+  if (!file) return;
+  if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+    toast('Per ora importo solo PDF digitali.', { error: true });
+    return;
+  }
+
+  el.importDdt.disabled = true;
+  if (el.importDdtLabel) el.importDdtLabel.textContent = 'Leggo DDT…';
+
+  try {
+    const parsed = await parseDdtPdf(file);
+    openDrawer(null);
+    applyParsedDdt(parsed);
+    toast(`DDT ${parsed.ddt_uscita} letto: controlla e salva`);
+  } catch (err) {
+    console.error(err);
+    toast(err?.message || 'DDT non riconosciuto. Inserisci la riga a mano.', { error: true });
+  } finally {
+    el.importDdt.disabled = false;
+    if (el.importDdtLabel) el.importDdtLabel.textContent = 'Importa DDT';
+    el.ddtFileInput.value = '';
+  }
+}
+
+function applyParsedDdt(data) {
+  setField(el.fDataUscita, data.data_uscita || todayISO());
+  setField(el.fDataRitiro, data.data_ritiro || '');
+  setField(el.fCliente, data.cliente || '');
+  setField(el.fIndirizzo, data.indirizzo || '');
+  setField(el.fOfferta, data.numero_offerta || '');
+  setField(el.fColli, data.colli ?? '');
+  setField(el.fPeso, data.peso ?? '');
+  setField(el.fModello, data.modello || '');
+  setField(el.fDdtUscita, data.ddt_uscita || '');
+  setField(el.fCorriere, data.corriere || '');
+  setField(el.fRientroEffettivo, '');
+  setField(el.fModalita, '');
+  setField(el.fDdtRientro, '');
+  setField(el.fNote, '');
+  el.fRitiroFatto.checked = false;
+  el.fRientrato.checked = false;
+  state.initialStato = 'Aperto';
+  state.initialFlags = { ritiro: false, rientrato: false };
+  delete el.fDataRitiro.dataset.previous;
+  delete el.fRientroEffettivo.dataset.previous;
+  syncTaskUI();
+  updateDrawerState();
+  updateQuickActions();
+}
+
+async function parseDdtPdf(file) {
+  const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+
+  const buffer = await file.arrayBuffer();
+  const document = await pdfjs.getDocument({ data: buffer }).promise;
+
+  try {
+    const page = await document.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+    const content = await page.getTextContent();
+
+    const words = content.items
+      .filter((item) => item.str && item.str.trim())
+      .map((item) => ({
+        text: item.str.trim(),
+        x: item.transform[4],
+        y: viewport.height - item.transform[5],
+      }))
+      .sort((a, b) => a.y - b.y || a.x - b.x);
+
+    const groups = [];
+    for (const word of words) {
+      let group = groups.find((candidate) => Math.abs(candidate.y - word.y) <= 3);
+      if (!group) {
+        group = { y: word.y, words: [] };
+        groups.push(group);
+      }
+      group.words.push(word);
+    }
+
+    const lines = groups.map((group) => {
+      const sorted = group.words.sort((a, b) => a.x - b.x);
+      return {
+        y: group.y,
+        x: sorted[0].x,
+        words: sorted,
+        text: sorted.map((word) => word.text).join(' ').replace(/\s+/g, ' ').trim(),
+      };
+    });
+
+    const fullText = lines.map((line) => line.text).join(' ');
+    if (!/DOCUMENTO\s+DI\s+TRASPORTO/i.test(fullText)) {
+      throw new Error('Formato DDT non riconosciuto.');
+    }
+
+    const ddtLine = lines.find((line) => /DDT\s+n°/.test(line.text) && /Data:/.test(line.text));
+    const ddtMatch = ddtLine?.text.match(/DDT\s+n°\s+(.+?)\s+Data:\s*(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!ddtMatch) throw new Error('Numero o data DDT non trovati.');
+
+    const ddtUscita = ddtMatch[1].trim();
+    const dataUscita = `${ddtMatch[4]}-${ddtMatch[3]}-${ddtMatch[2]}`;
+
+    const half = viewport.width * 0.5;
+    const rightText = (line) => line.words
+      .filter((word) => word.x > half)
+      .map((word) => word.text)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const leftText = (line) => line.words
+      .filter((word) => word.x <= half)
+      .map((word) => word.text)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const recipientHeader = lines.find((line) => line.text.includes('DESTINATARIO'));
+    const recipientLines = recipientHeader
+      ? lines.filter((line) => line.y > recipientHeader.y + 5 && line.y < recipientHeader.y + 70)
+      : [];
+    const cliente = recipientLines.map(rightText).find((text) => /[A-Za-z]/.test(text)) ?? null;
+
+    const causaleLine = lines.find((line) => /Causale:/.test(line.text) && /Colli/.test(line.text));
+    const causaleMatch = causaleLine?.text.match(/Causale:\s*(.*?)\s+N°\s*Colli\s+(\d+)\s+Kg\s+([\d.,]+)/);
+    const colli = causaleMatch ? Number(causaleMatch[2]) : null;
+    const peso = causaleMatch ? Number(causaleMatch[3].replace(',', '.')) : null;
+
+    const deliveryHeader = lines.find((line) => /LUOGO\s+di\s+CONSEGNA/i.test(line.text));
+    const deliveryLines = deliveryHeader
+      ? lines.filter((line) => line.y > deliveryHeader.y + 5 && line.y < deliveryHeader.y + 80)
+      : [];
+    const destinazione = deliveryLines
+      .map(rightText)
+      .find((text) => /[A-Za-z]/.test(text) && !/^LUOGO/i.test(text)) ?? null;
+
+    const vettoreHeader = lines.find((line) => /^Vettore/i.test(line.text));
+    const vettoreLines = vettoreHeader
+      ? lines.filter((line) => line.y > vettoreHeader.y + 5 && line.y < vettoreHeader.y + 55)
+      : [];
+    const corriere = vettoreLines
+      .map(leftText)
+      .find((text) => /[A-Za-z]/.test(text) && !/^Vettore/i.test(text)) ?? null;
+
+    const itemsHeader = lines.find((line) => /DESCRIZIONE/.test(line.text) && /QTA/.test(line.text));
+    const itemsEnd = vettoreHeader?.y ?? viewport.height;
+    const itemLines = itemsHeader
+      ? lines.filter((line) => line.y > itemsHeader.y + 5 && line.y < itemsEnd - 5)
+      : [];
+
+    const items = [];
+    for (const line of itemLines) {
+      const num = line.words.find((word) => word.x < viewport.width * 0.12 && /^\d{2}$/.test(word.text))?.text;
+      const qty = line.words.find((word) => word.x >= viewport.width * 0.74
+        && word.x < viewport.width * 0.83
+        && /^\d+$/.test(word.text))?.text;
+      const desc = line.words
+        .filter((word) => word.x >= viewport.width * 0.15 && word.x < viewport.width * 0.74)
+        .map((word) => word.text)
+        .join(' ')
+        .trim();
+
+      if (num && qty && desc) {
+        items.push({ desc, qty: Number(qty) });
+      } else if (items.length && desc) {
+        items[items.length - 1].desc += ` ${desc}`;
+      }
+    }
+
+    const offerLine = lines.find((line) => /Rif\.\s*OFF\s*#:/.test(line.text));
+    const offerMatch = offerLine?.text.match(/Rif\.\s*OFF\s*#:\s*(.+)$/i);
+    const offer = offerMatch ? offerMatch[1].trim() : null;
+
+    if (!cliente || !destinazione) {
+      throw new Error('Cliente o destinazione non trovati nel DDT.');
+    }
+
+    const modello = items.length
+      ? items.map((item) => `${compactDdtModel(item.desc)} ×${item.qty}`).join(' + ')
+      : null;
+
+    return {
+      data_uscita: dataUscita,
+      data_ritiro: nextWorkingDay(dataUscita),
+      cliente,
+      indirizzo: destinazione,
+      numero_offerta: offer,
+      colli,
+      peso,
+      modello,
+      ddt_uscita: ddtUscita,
+      corriere,
+      note: null,
+    };
+  } finally {
+    await document.destroy();
+  }
+}
+
+function compactDdtModel(description) {
+  const text = description
+    .replace(/SILENTSYSTEM\s*®?/gi, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (/SX-?839\s+CH10/i.test(text)) return '839 CH10 HIFI';
+  if (/CABLE\s+USB\s+C/i.test(text)) return 'CABLE USB C 5';
+  if (/FAST\s+CHARGING\s+STATION\s+12/i.test(text)) return 'FAST CHARGING 12';
+  return text.slice(0, 32).trim();
+}
+
 function trapFocus(event) {
   if (event.key !== 'Tab') return;
   const focusable = $$('button, input, select, textarea', el.drawer)
@@ -1416,8 +1664,8 @@ function exportCsv() {
 
   const header = [
     'Data uscita', 'Impostazione ritiro', 'Ritiro impostato', 'Rientro effettivo',
-    'Rientrato', 'Cliente', 'Destinazione', 'N. offerta', 'Colli', 'Modello',
-    'Modalità rientro', 'DDT rientro', 'Stato', 'Note',
+    'Rientrato', 'Cliente', 'Destinazione', 'N. offerta', 'DDT uscita', 'Corriere',
+    'Colli', 'Peso (kg)', 'Modello', 'Modalità rientro', 'DDT rientro', 'Stato', 'Note',
   ];
   const lines = [header.join(';')];
   for (const row of rows) {
@@ -1430,7 +1678,10 @@ function exportCsv() {
       row.cliente ?? '',
       row.indirizzo ?? '',
       row.numero_offerta ?? '',
+      row.ddt_uscita ?? '',
+      row.corriere ?? '',
       row.colli ?? '',
+      row.peso ?? '',
       row.modello ?? '',
       row.modalita_rientro ?? '',
       row.ddt_rientro ?? '',
