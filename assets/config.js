@@ -14,4 +14,4 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_YtPN7DD1BarOz5uOVhjkmw_YuT7D2Tg
 
 export const APP_TITLE = 'Registro spedizioni';
 export const APP_YEAR = '2026';
-export const COMPANY_NAME = 'Silent System';
+export const COMPANY_NAME = 'Silentsystem';

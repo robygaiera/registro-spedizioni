@@ -56,8 +56,18 @@ const el = {
   loginDemo: $('#login-demo'),
   setupDemo: $('#setup-demo'),
   userEmail: $('#user-email'),
+  userAvatar: $('#user-avatar'),
   logout: $('#logout'),
   refresh: $('#refresh'),
+  sidebar: $('#sidebar'),
+  sidebarScrim: $('#sidebar-scrim'),
+  sidebarClose: $('#sidebar-close'),
+  menuToggle: $('#menu-toggle'),
+  systemStatus: $('#system-status'),
+  connectionText: $('#connection-text'),
+  pageTitle: $('#page-title'),
+  pageSubtitle: $('#page-subtitle'),
+  crumbCurrent: $('#crumb-current'),
   demoBanner: $('#demo-banner'),
   demoReset: $('#demo-reset'),
   search: $('#search'),
@@ -166,9 +176,11 @@ function isConfigured() {
 }
 
 function initChrome() {
-  document.title = `${APP_TITLE} ${APP_YEAR}`;
-  $('#app-title').textContent = APP_TITLE;
-  $('#app-year').textContent = APP_YEAR;
+  document.title = `Alfred · ${APP_TITLE} ${APP_YEAR}`;
+  const title = $('#app-title');
+  const year = $('#app-year');
+  if (title) title.textContent = APP_TITLE;
+  if (year) year.textContent = APP_YEAR;
   $$('[data-company]').forEach((node) => { node.textContent = COMPANY_NAME; });
 }
 
@@ -176,6 +188,27 @@ function showView(name) {
   el.auth.hidden = name !== 'auth';
   el.setup.hidden = name !== 'setup';
   el.app.hidden = name !== 'app';
+}
+
+function setSidebar(open) {
+  if (!el.sidebar) return;
+  el.sidebar.classList.toggle('sidebar-open', open);
+  el.sidebarScrim.hidden = !open;
+  document.body.classList.toggle('nav-open', open);
+  el.menuToggle.setAttribute('aria-expanded', String(open));
+
+  if (open) {
+    el.sidebar.querySelector('button, a')?.focus();
+  } else if (el.menuToggle.getClientRects().length) {
+    el.menuToggle.focus();
+  }
+}
+
+function initials(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return '--';
+  if (text.includes('@')) return text.slice(0, 2).toUpperCase();
+  return text.split(/\s+/).slice(0, 2).map((part) => part[0] ?? '').join('').toUpperCase();
 }
 
 /* ------------------------------------------------------------------ */
@@ -220,7 +253,11 @@ async function initSupabase() {
 async function enterApp(session) {
   state.session = session ?? null;
   state.demo = false;
-  el.userEmail.textContent = session?.user?.email ?? '';
+  const email = session?.user?.email ?? '';
+  el.userEmail.textContent = email || 'account';
+  el.userAvatar.textContent = initials(email);
+  el.systemStatus.textContent = 'SISTEMA ATTIVO';
+  el.connectionText.textContent = 'Dati sincronizzati con Supabase.';
   el.demoBanner.hidden = true;
   el.loginDemo.hidden = true;
   showView('app');
@@ -249,6 +286,12 @@ function wireEvents() {
 
   el.setupDemo.addEventListener('click', () => { location.search = '?demo=1'; });
   el.loginDemo.addEventListener('click', () => { location.search = '?demo=1'; });
+
+  el.menuToggle.addEventListener('click', () => {
+    setSidebar(!el.sidebar.classList.contains('sidebar-open'));
+  });
+  el.sidebarClose.addEventListener('click', () => setSidebar(false));
+  el.sidebarScrim.addEventListener('click', () => setSidebar(false));
 
   el.refresh.addEventListener('click', async () => {
     if (state.loading) return;
@@ -381,8 +424,11 @@ function wireEvents() {
   el.drawer.addEventListener('keydown', trapFocus);
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && el.drawer.classList.contains('is-open')) {
+    if (event.key !== 'Escape') return;
+    if (el.drawer.classList.contains('is-open')) {
       closeDrawer();
+    } else if (el.sidebar.classList.contains('sidebar-open')) {
+      setSidebar(false);
     }
   });
 
@@ -455,6 +501,9 @@ async function startDemo() {
     store = await demoStore();
     state.demo = true;
     el.userEmail.textContent = 'modalità demo';
+    el.userAvatar.textContent = 'DE';
+    el.systemStatus.textContent = 'MODALITÀ DEMO';
+    el.connectionText.textContent = 'Dati di esempio solo in questo browser.';
     el.demoBanner.hidden = false;
     el.loginDemo.hidden = true;
     showView('app');
@@ -757,6 +806,7 @@ function render() {
 
   renderMeta(filtered);
   renderViews();
+  renderPageHeading();
   renderPickupBar();
   renderTable(filtered);
   renderSort();
@@ -987,12 +1037,28 @@ const VIEW_DEFAULTS = {
   archivio: { key: 'data_uscita', dir: 'desc' },
 };
 
+const VIEW_META = {
+  tutte: ['Registro spedizioni', 'Tutte le spedizioni 2026'],
+  ritiri: ['Ritiri da impostare', 'Impostazioni del giorno selezionato'],
+  rientrare: ['Da rientrare', 'Materiale ancora fuori'],
+  da_chiudere: ['Da chiudere', 'Rientrato, pratica da verificare'],
+  archivio: ['Archivio', 'Chiusi e annullati'],
+};
+
 function setView(view) {
+  if (el.sidebar.classList.contains('sidebar-open')) setSidebar(false);
   if (!VIEW_DEFAULTS[view] || state.view === view) return;
   state.view = view;
   state.sort = { ...VIEW_DEFAULTS[view] };
   state.visible = STEP;
   render();
+}
+
+function renderPageHeading() {
+  const [title, subtitle] = VIEW_META[state.view] ?? VIEW_META.tutte;
+  if (el.pageTitle) el.pageTitle.textContent = title;
+  if (el.pageSubtitle) el.pageSubtitle.textContent = subtitle;
+  if (el.crumbCurrent) el.crumbCurrent.textContent = title;
 }
 
 function setPickupDate(date) {
@@ -1010,6 +1076,7 @@ function setPickupDate(date) {
 /* ------------------------------------------------------------------ */
 
 function openDrawer(row) {
+  if (el.sidebar.classList.contains('sidebar-open')) setSidebar(false);
   state.lastFocus = document.activeElement;
   state.editingId = row?.id ?? null;
   state.initialStato = row?.stato ?? 'Aperto';

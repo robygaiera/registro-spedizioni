@@ -4,10 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="Registro spedizioni 2026: tabella filtrabile e modificabile.">
+  <meta name="description" content="Alfred — registro spedizioni 2026: tabella filtrabile e modificabile.">
   <meta name="robots" content="noindex, nofollow">
-  <title>Registro spedizioni 2026</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314161a'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='14' font-weight='700' fill='%23fff' text-anchor='middle'%3E26%3C/text%3E%3C/svg%3E">
+  <title>Alfred · Registro spedizioni 2026</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/brand/favicon-64.png">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
@@ -23,24 +28,15 @@
 
   <!-- ============ LOGIN ============ -->
   <section id="auth-view" class="auth" hidden>
-    <div class="auth-art">
-      <div class="auth-art-head">
-        <span class="mark mark-light">26</span>
-        <span class="wordmark">Registro spedizioni</span>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="assets/brand/alfred-logo-light.png" alt="Alfred ninja by Silentsystem">
       </div>
-      <div class="auth-art-body">
-        <p class="eyebrow eyebrow-light">Anno 2026</p>
-        <p class="auth-year" aria-hidden="true">2026</p>
-        <p class="auth-quote">Ogni spedizione,<br>un colpo d'occhio.</p>
-      </div>
-      <p class="auth-art-foot">Accesso riservato</p>
-    </div>
+      <p class="eyebrow">REGISTRO SPEDIZIONI 2026</p>
+      <h1>Accedi</h1>
+      <p class="auth-sub">Inserisci le credenziali del tuo account.</p>
 
-    <div class="auth-panel">
-      <form id="login-form" class="auth-card" novalidate>
-        <h1>Accedi</h1>
-        <p class="muted auth-sub">Inserisci le credenziali del tuo account.</p>
-
+      <form id="login-form" class="auth-form" novalidate>
         <label class="field">
           <span>Email</span>
           <input id="login-email" name="email" type="email" autocomplete="username" inputmode="email" required>
@@ -51,180 +47,244 @@
         </label>
 
         <p id="login-error" class="form-error" role="alert" hidden></p>
-        <button id="login-submit" class="btn btn-primary btn-block" type="submit">Entra</button>
-        <button id="login-demo" class="btn btn-ghost btn-block" type="button" hidden>Prova la demo senza account</button>
+        <button id="login-submit" class="btn btn-orange btn-block" type="submit">Entra</button>
+        <button id="login-demo" class="btn btn-quiet btn-block" type="button" hidden>Prova la demo senza account</button>
       </form>
-      <p class="auth-foot"><span data-company>Silent System</span> &middot; Registro spedizioni 2026</p>
+
+      <p class="auth-foot"><span data-company>Silentsystem</span> &middot; Registro spedizioni 2026</p>
     </div>
   </section>
 
-  <!-- ============ SETUP (Supabase non configurato) ============ -->
+  <!-- ============ SETUP ============ -->
   <section id="setup-view" class="setup" hidden>
     <div class="setup-card">
       <div class="setup-head">
-        <span class="mark">26</span>
+        <img class="setup-logo" src="assets/brand/alfred-logo-dark.png" alt="Alfred ninja by Silentsystem">
         <div>
-          <p class="eyebrow">Configurazione</p>
+          <p class="eyebrow">CONFIGURAZIONE</p>
           <h1>Collega Supabase</h1>
         </div>
       </div>
-      <p class="muted">Il sito non contiene dati. Il registro vive su Supabase e l'accesso è protetto da email e password.</p>
+      <p class="muted setup-intro">Il sito non contiene dati. Il registro vive su Supabase e l'accesso è protetto da email e password.</p>
       <ol class="steps">
         <li>Crea un progetto gratuito su <strong>supabase.com</strong>.</li>
         <li>Nel <strong>SQL Editor</strong> esegui <code>supabase/schema.sql</code>, poi <code>private/seed.sql</code>.</li>
-        <li>In <strong>Authentication &rarr; Providers &rarr; Email</strong> disattiva <em>Allow new users to sign up</em> e crea gli utenti da <strong>Users</strong>.</li>
-        <li>Copia <strong>Project URL</strong> e <strong>anon public key</strong> in <code>assets/config.js</code>.</li>
+        <li>In <strong>Authentication &rarr; Sign In / Providers</strong> disattiva le registrazioni e crea gli utenti da <strong>Users</strong>.</li>
+        <li>Copia <strong>Project URL</strong> e <strong>anon / publishable key</strong> in <code>assets/config.js</code>.</li>
       </ol>
       <pre class="code">export const SUPABASE_URL = 'https://xxxx.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
       <div class="setup-actions">
-        <button id="setup-demo" class="btn btn-primary" type="button">Apri la demo</button>
-        <a class="btn btn-ghost" href="README.md" target="_blank" rel="noopener">Leggi il README</a>
+        <button id="setup-demo" class="btn btn-orange" type="button">Apri la demo</button>
+        <a class="btn btn-outline" href="README.md" target="_blank" rel="noopener">Leggi il README</a>
       </div>
-      <p class="fineprint">La anon key è pensata per essere pubblica: la protezione dei dati è nelle policy RLS di Supabase. Non inserire mai la service_role key.</p>
+      <p class="fineprint">La chiave pubblica è pensata per stare nel browser: la protezione dei dati è nelle policy RLS di Supabase. Non inserire mai la service_role key.</p>
     </div>
   </section>
 
   <!-- ============ APP ============ -->
-  <div id="app" class="app" hidden>
-    <header class="topbar">
-      <div class="brand">
-        <span class="mark">26</span>
-        <div class="brand-text">
-          <h1 id="app-title">Registro spedizioni</h1>
-          <p><span id="app-year">2026</span> <span class="dot">&middot;</span> <span id="user-email">—</span></p>
+  <div id="app" class="app-frame" hidden>
+    <a href="#workspace-main" class="skip-link">Vai al contenuto</a>
+
+    <aside id="sidebar" class="sidebar" aria-label="Navigazione principale">
+      <div class="sidebar-top">
+        <a class="sidebar-brand" href="#" aria-label="Alfred — Registro spedizioni">
+          <img src="assets/brand/alfred-logo-light.png" alt="Alfred ninja by Silentsystem">
+        </a>
+        <button id="sidebar-close" class="sidebar-close" type="button" aria-label="Chiudi menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="side-caption">POSTAZIONE</div>
+      <nav class="side-nav" aria-label="Viste del registro">
+        <button class="view-tab side-link is-active" type="button" aria-pressed="true" data-view="tutte">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span>Registro</span>
+          <span class="view-count" data-count="tutte">—</span>
+        </button>
+        <button class="view-tab side-link" type="button" aria-pressed="false" data-view="ritiri">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
+          <span>Ritiri da impostare</span>
+          <span class="view-count" data-count="ritiri">—</span>
+        </button>
+        <button class="view-tab side-link" type="button" aria-pressed="false" data-view="rientrare">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          <span>Da rientrare</span>
+          <span class="view-count" data-count="rientrare">—</span>
+        </button>
+        <button class="view-tab side-link" type="button" aria-pressed="false" data-view="da_chiudere">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Da chiudere</span>
+          <span class="view-count" data-count="da_chiudere">—</span>
+        </button>
+        <button class="view-tab side-link" type="button" aria-pressed="false" data-view="archivio">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg>
+          <span>Archivio</span>
+          <span class="view-count" data-count="archivio">—</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="connection-card">
+          <span class="live-dot" id="system-status">SISTEMA ATTIVO</span>
+          <p id="connection-text">Dati sincronizzati con Supabase.</p>
+          <span class="connection-foot">REGISTRO 2026</span>
+        </div>
+        <div class="profile-row">
+          <span class="avatar" id="user-avatar">--</span>
+          <span class="profile-meta">
+            <b>Account</b>
+            <small id="user-email">—</small>
+          </span>
+          <button id="logout" class="icon-btn profile-logout" type="button" aria-label="Esci">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          </button>
         </div>
       </div>
-      <div class="topbar-actions">
-        <button id="refresh" class="icon-btn" type="button" title="Aggiorna i dati" aria-label="Aggiorna i dati">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
-        </button>
-        <button id="logout" class="btn btn-ghost btn-sm" type="button">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-          Esci
-        </button>
-      </div>
-    </header>
+    </aside>
 
-    <div id="demo-banner" class="demo-banner" hidden>
-      <span><strong>Modalità demo.</strong> Dati di esempio, modifiche solo in questo browser.</span>
-      <span class="demo-banner-actions">
+    <button id="sidebar-scrim" class="sidebar-scrim" type="button" aria-label="Chiudi menu" hidden></button>
+
+    <main class="workspace" id="workspace-main">
+      <header class="topbar">
+        <button id="menu-toggle" class="mobile-menu" type="button" aria-label="Apri menu" aria-controls="sidebar" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="crumb"><span>Alfred</span><span aria-hidden="true">/</span><b id="crumb-current">Registro spedizioni</b></div>
+        <div class="topbar-right">
+          <span class="privacy-tag">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+            SPAZIO INTERNO
+          </span>
+          <button id="refresh" class="icon-btn" type="button" title="Aggiorna i dati" aria-label="Aggiorna i dati">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div id="demo-banner" class="demo-banner" hidden>
+        <span><strong>Modalità demo.</strong> Dati di esempio, modifiche solo in questo browser.</span>
         <button id="demo-reset" class="link" type="button">Ripristina</button>
-      </span>
-    </div>
-
-    <main class="shell">
-      <div class="views" aria-label="Viste del registro">
-        <button class="view-tab is-active" type="button" aria-pressed="true" data-view="tutte">Tutte <span class="view-count" data-count="tutte">—</span></button>
-        <button class="view-tab" type="button" aria-pressed="false" data-view="ritiri">Ritiri da impostare <span class="view-count" data-count="ritiri">—</span></button>
-        <button class="view-tab" type="button" aria-pressed="false" data-view="rientrare">Da rientrare <span class="view-count" data-count="rientrare">—</span></button>
-        <button class="view-tab" type="button" aria-pressed="false" data-view="da_chiudere">Da chiudere <span class="view-count" data-count="da_chiudere">—</span></button>
-        <button class="view-tab" type="button" aria-pressed="false" data-view="archivio">Archivio <span class="view-count" data-count="archivio">—</span></button>
       </div>
 
-      <div id="pickup-bar" class="pickup-bar" hidden>
-        <button id="pickup-prev" class="icon-btn pickup-nav" type="button" aria-label="Giorno precedente">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-        </button>
-        <div class="pickup-date-wrap">
-          <p class="eyebrow">Ritiri da impostare</p>
-          <strong id="pickup-label">—</strong>
-        </div>
-        <button id="pickup-next" class="icon-btn pickup-nav" type="button" aria-label="Giorno successivo">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <input type="date" id="pickup-date-input" class="pickup-date-input" aria-label="Scegli la data dei ritiri">
-        <label class="pickup-toggle">
-          <input type="checkbox" id="pickup-show-done">
-          Mostra anche completati
-        </label>
-        <span id="pickup-count" class="pickup-count"></span>
-      </div>
-
-      <div class="toolbar">
-        <div class="search-wrap">
-          <svg class="search-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input id="search" type="search" placeholder="Cerca cliente, destinazione, offerta, modello, note…" autocomplete="off">
+      <div class="workspace-content">
+        <div class="page-heading">
+          <div class="page-heading-copy">
+            <p class="eyebrow">ANNO 2026</p>
+            <h1 id="page-title">Registro spedizioni</h1>
+            <p id="page-subtitle">Tutte le spedizioni 2026</p>
+          </div>
+          <div class="page-actions">
+            <button id="export" class="btn btn-outline" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+              CSV
+            </button>
+            <button id="new-entry" class="btn btn-orange" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              Nuova spedizione
+            </button>
+          </div>
         </div>
 
-        <select id="filter-month" aria-label="Filtra per mese">
-          <option value="">Tutti i mesi</option>
-        </select>
-        <select id="filter-stato" aria-label="Filtra per stato">
-          <option value="">Tutti gli stati</option>
-          <option value="Aperto">Aperti</option>
-          <option value="Ritiro impostato">Ritiro impostato</option>
-          <option value="Rientrato">Rientrati</option>
-          <option value="Chiuso">Chiusi</option>
-          <option value="Annullato">Annullati</option>
-        </select>
-        <select id="filter-modello" aria-label="Filtra per modello">
-          <option value="">Tutti i modelli</option>
-        </select>
-        <button id="reset-filters" class="btn btn-ghost btn-sm" type="button" disabled>Azzera</button>
-
-        <div class="toolbar-spacer"></div>
-
-        <button id="export" class="btn btn-ghost btn-sm" type="button">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-          CSV
-        </button>
-        <button id="new-entry" class="btn btn-primary btn-sm" type="button">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-          Nuova spedizione
-        </button>
-      </div>
-
-      <div class="meta-row">
-        <p id="result-count" class="result-count" aria-live="polite">Caricamento…</p>
-        <span id="filter-hint" class="filter-hint" hidden></span>
-        <select id="sort-mobile" aria-label="Ordina il registro">
-          <option value="data_uscita:desc">Più recenti</option>
-          <option value="data_uscita:asc">Più vecchie</option>
-          <option value="data_ritiro:asc">Impostazione ritiro</option>
-          <option value="rientro_effettivo:asc">Rientro effettivo</option>
-          <option value="cliente:asc">Cliente A–Z</option>
-          <option value="colli:desc">Più colli</option>
-          <option value="modello:asc">Modello A–Z</option>
-          <option value="stato:asc">Stato</option>
-        </select>
-      </div>
-
-      <div id="load-error" class="alert" hidden>
-        <span id="load-error-text">Impossibile caricare il registro.</span>
-        <button id="retry" class="btn btn-ghost btn-sm" type="button">Riprova</button>
-      </div>
-
-      <div class="table-wrap">
-        <table id="table">
-          <thead>
-            <tr>
-              <th class="col-tasks">Spunte</th>
-              <th class="col-date" aria-sort="none"><button class="sort-btn" data-sort="data_uscita">Data uscita<span class="arrow"></span></button></th>
-              <th class="col-notes">Note</th>
-              <th class="col-client"><button class="sort-btn" data-sort="cliente">Cliente / destinazione<span class="arrow"></span></button></th>
-              <th class="col-offer">N. offerta</th>
-              <th class="col-pickup"><button class="sort-btn" data-sort="data_ritiro">Ritiro / rientro<span class="arrow"></span></button></th>
-              <th class="col-packages"><button class="sort-btn" data-sort="colli">Colli<span class="arrow"></span></button></th>
-              <th class="col-model"><button class="sort-btn" data-sort="modello">Modello<span class="arrow"></span></button></th>
-              <th class="col-status"><button class="sort-btn" data-sort="stato">Stato<span class="arrow"></span></button></th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-        <div id="table-loading" class="table-loading" hidden>
-          <span class="spinner" aria-hidden="true"></span>
-          <span>Caricamento registro…</span>
+        <div id="pickup-bar" class="pickup-bar" hidden>
+          <button id="pickup-prev" class="icon-btn pickup-nav" type="button" aria-label="Giorno precedente">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div class="pickup-date-wrap">
+            <p class="eyebrow">RITIRI DA IMPOSTARE</p>
+            <strong id="pickup-label">—</strong>
+          </div>
+          <button id="pickup-next" class="icon-btn pickup-nav" type="button" aria-label="Giorno successivo">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <input type="date" id="pickup-date-input" class="pickup-date-input" aria-label="Scegli la data dei ritiri">
+          <label class="pickup-toggle">
+            <input type="checkbox" id="pickup-show-done">
+            Mostra anche completati
+          </label>
+          <span id="pickup-count" class="pickup-count"></span>
         </div>
-        <div id="empty-state" class="empty-state" hidden>
-          <p class="empty-title">Nessuna spedizione trovata</p>
-          <p class="muted">Prova a cambiare ricerca o filtri.</p>
-          <button id="empty-reset" class="btn btn-ghost btn-sm" type="button">Azzera i filtri</button>
-        </div>
-      </div>
 
-      <div class="pager">
-        <button id="load-more" class="btn btn-ghost btn-sm" type="button" hidden>Mostra altre</button>
+        <div class="queue-toolbar">
+          <div class="searchbox">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="search" type="search" placeholder="Cerca cliente, destinazione, offerta, modello, note…" autocomplete="off">
+          </div>
+          <div class="filter-row">
+            <span class="filter-label">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              FILTRI
+            </span>
+            <select id="filter-month" aria-label="Filtra per mese">
+              <option value="">Tutti i mesi</option>
+            </select>
+            <select id="filter-stato" aria-label="Filtra per stato">
+              <option value="">Tutti gli stati</option>
+              <option value="Aperto">Aperti</option>
+              <option value="Ritiro impostato">Ritiro impostato</option>
+              <option value="Rientrato">Rientrati</option>
+              <option value="Chiuso">Chiusi</option>
+              <option value="Annullato">Annullati</option>
+            </select>
+            <select id="filter-modello" aria-label="Filtra per modello">
+              <option value="">Tutti i modelli</option>
+            </select>
+            <button id="reset-filters" class="filter-reset" type="button" disabled>Azzera</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <p id="result-count" class="result-count" aria-live="polite">Caricamento…</p>
+          <span id="filter-hint" class="filter-hint" hidden></span>
+          <select id="sort-mobile" class="sort-mobile" aria-label="Ordina il registro">
+            <option value="data_uscita:desc">Più recenti</option>
+            <option value="data_uscita:asc">Più vecchie</option>
+            <option value="data_ritiro:asc">Impostazione ritiro</option>
+            <option value="rientro_effettivo:asc">Rientro effettivo</option>
+            <option value="cliente:asc">Cliente A–Z</option>
+            <option value="colli:desc">Più colli</option>
+            <option value="modello:asc">Modello A–Z</option>
+            <option value="stato:asc">Stato</option>
+          </select>
+        </div>
+
+        <div id="load-error" class="alert" hidden>
+          <span id="load-error-text">Impossibile caricare il registro.</span>
+          <button id="retry" class="btn btn-outline btn-sm" type="button">Riprova</button>
+        </div>
+
+        <div class="table-wrap">
+          <table id="table">
+            <thead>
+              <tr>
+                <th class="col-tasks">Spunte</th>
+                <th class="col-date" aria-sort="none"><button class="sort-btn" data-sort="data_uscita">Data uscita<span class="arrow"></span></button></th>
+                <th class="col-notes">Note</th>
+                <th class="col-client"><button class="sort-btn" data-sort="cliente">Cliente / destinazione<span class="arrow"></span></button></th>
+                <th class="col-offer">N. offerta</th>
+                <th class="col-pickup"><button class="sort-btn" data-sort="data_ritiro">Ritiro / rientro<span class="arrow"></span></button></th>
+                <th class="col-packages"><button class="sort-btn" data-sort="colli">Colli<span class="arrow"></span></button></th>
+                <th class="col-model"><button class="sort-btn" data-sort="modello">Modello<span class="arrow"></span></button></th>
+                <th class="col-status"><button class="sort-btn" data-sort="stato">Stato<span class="arrow"></span></button></th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+          <div id="table-loading" class="table-loading" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Caricamento registro…</span>
+          </div>
+          <div id="empty-state" class="empty-state" hidden>
+            <p class="empty-title">Nessuna spedizione trovata</p>
+            <p class="muted">Prova a cambiare ricerca o filtri.</p>
+            <button id="empty-reset" class="btn btn-outline btn-sm" type="button">Azzera i filtri</button>
+          </div>
+        </div>
+
+        <div class="pager">
+          <button id="load-more" class="btn btn-outline btn-sm" type="button" hidden>Mostra altre</button>
+        </div>
       </div>
     </main>
   </div>
@@ -234,14 +294,14 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
   <aside id="drawer" class="drawer" aria-hidden="true" aria-labelledby="drawer-title">
     <div class="drawer-head">
       <div class="drawer-head-main">
-        <p class="eyebrow">Registro 2026</p>
+        <p class="eyebrow">SILENTSYSTEM / REGISTRO</p>
         <div class="drawer-title-row">
           <h2 id="drawer-title">Modifica spedizione</h2>
-          <span id="drawer-stato" class="badge badge-open">Aperto</span>
+          <span id="drawer-stato" class="pill pill-open">Aperto</span>
         </div>
       </div>
       <button id="drawer-close" class="icon-btn" type="button" aria-label="Chiudi">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
 
@@ -268,7 +328,7 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
       </div>
 
       <div id="quick-actions" class="quick-actions" hidden>
-        <button id="quick-close" class="btn btn-ghost btn-sm" type="button">Chiudi pratica</button>
+        <button id="quick-close" class="btn btn-outline btn-sm" type="button">Chiudi pratica</button>
       </div>
 
       <p id="form-error" class="form-error" role="alert" hidden></p>
@@ -334,8 +394,8 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
     <div class="drawer-foot">
       <button id="entry-delete" class="btn btn-danger btn-sm" type="button" hidden>Elimina</button>
       <div class="toolbar-spacer"></div>
-      <button id="entry-cancel" class="btn btn-ghost btn-sm" type="button">Annulla</button>
-      <button id="entry-save" class="btn btn-primary btn-sm" type="submit" form="entry-form">Salva</button>
+      <button id="entry-cancel" class="btn btn-quiet btn-sm" type="button">Annulla</button>
+      <button id="entry-save" class="btn btn-orange btn-sm" type="submit" form="entry-form">Salva</button>
     </div>
   </aside>
 
