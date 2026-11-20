@@ -10039,11 +10039,11 @@
     "rientro_effettivo": null,
     "modalita_rientro": null,
     "ddt_rientro": null,
-    "ritiro_impostato": true,
+    "ritiro_impostato": false,
     "rientrato": false,
     "colli": null,
     "modello": null,
-    "stato": "Ritiro impostato",
+    "stato": "Aperto",
     "note": "Consegna confermata"
   },
   {
@@ -14510,11 +14510,11 @@
     "rientro_effettivo": null,
     "modalita_rientro": null,
     "ddt_rientro": null,
-    "ritiro_impostato": true,
+    "ritiro_impostato": false,
     "rientrato": false,
     "colli": 1,
     "modello": null,
-    "stato": "Ritiro impostato",
+    "stato": "Aperto",
     "note": "Sollecitare il cliente"
   },
   {
@@ -14663,11 +14663,11 @@
     "rientro_effettivo": null,
     "modalita_rientro": null,
     "ddt_rientro": null,
-    "ritiro_impostato": true,
+    "ritiro_impostato": false,
     "rientrato": false,
     "colli": 1,
     "modello": "839 V2",
-    "stato": "Ritiro impostato",
+    "stato": "Aperto",
     "note": null
   },
   {
@@ -14748,11 +14748,11 @@
     "rientro_effettivo": null,
     "modalita_rientro": null,
     "ddt_rientro": null,
-    "ritiro_impostato": true,
+    "ritiro_impostato": false,
     "rientrato": false,
     "colli": 3,
     "modello": "808N",
-    "stato": "Ritiro impostato",
+    "stato": "Aperto",
     "note": "Ritiro da fissare"
   },
   {
@@ -14765,11 +14765,11 @@
     "rientro_effettivo": null,
     "modalita_rientro": null,
     "ddt_rientro": null,
-    "ritiro_impostato": true,
+    "ritiro_impostato": false,
     "rientrato": false,
     "colli": 1,
     "modello": "839 V2",
-    "stato": "Ritiro impostato",
+    "stato": "Aperto",
     "note": null
   },
   {

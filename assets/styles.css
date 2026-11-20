@@ -469,6 +469,55 @@ code {
 }
 .view-tab.is-active .view-count { background: var(--ink); color: #fff; }
 
+.pickup-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: -2px 0 14px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.pickup-date-wrap { min-width: 190px; }
+.pickup-date-wrap strong {
+  display: block;
+  margin-top: 1px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+.pickup-nav { border: 1px solid var(--line); background: var(--surface); }
+.pickup-bar .pickup-date-input { width: 148px; height: 34px; font-size: 12px; }
+.pickup-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.pickup-toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+.pickup-count {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
 .search-wrap { position: relative; flex: 1 1 280px; min-width: 220px; max-width: 420px; }
 .search-icon {
   position: absolute;
@@ -946,6 +995,11 @@ tbody tr.is-returned .client-main { color: #4b4e53; }
 
   .views { margin-bottom: 12px; flex-wrap: wrap; overflow-x: visible; row-gap: 2px; }
   .view-tab { padding: 8px 10px 7px; font-size: 12px; }
+  .pickup-bar { gap: 8px; padding: 10px 12px; }
+  .pickup-date-wrap { flex: 1 1 auto; min-width: 0; }
+  .pickup-bar .pickup-date-input { width: 132px; }
+  .pickup-toggle { flex: 1 1 100%; }
+  .pickup-count { margin-left: 0; }
   .return-cell .return-eff,
   .return-cell .return-prev { display: inline; }
   .return-cell .return-eff { margin-right: 6px; }

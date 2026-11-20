@@ -233,12 +233,12 @@ def main():
     seed.extend([
         "-- Allinea le due spunte e lo stato ai dati importati",
         "update public.spedizioni",
-        "set ritiro_impostato = (data_ritiro is not null),",
+        "set ritiro_impostato = (stato = 'Chiuso' or (data_ritiro is not null and data_ritiro < current_date)),",
         "    rientrato = (stato = 'Chiuso');",
         "",
         "update public.spedizioni",
         "set stato = 'Ritiro impostato'",
-        "where stato = 'Aperto' and data_ritiro is not null;",
+        "where stato = 'Aperto' and ritiro_impostato = true;",
         "",
     ])
 
@@ -337,6 +337,7 @@ def anonymize(rows):
         return candidate
 
     modes = ["Etichetta nostra", "A carico cliente", "Ritiro nostro", "Di persona"]
+    today = dt.date.today().isoformat()
 
     out = []
     for i, row in enumerate(rows, start=1):
@@ -347,7 +348,7 @@ def anonymize(rows):
         # Una parte delle righe chiuse diventa "Rientrato": serve a mostrare
         # la vista "Da chiudere" nella demo.
         ritiro_prev = safe_date(row["data_ritiro"])
-        ritiro_impostato = bool(ritiro_prev)
+        ritiro_impostato = closed or bool(ritiro_prev and ritiro_prev < today)
         rientrato = closed
         rientro_effettivo = None
         modalita_rientro = None
@@ -378,7 +379,7 @@ def anonymize(rows):
                 "rientro_effettivo": rientro_effettivo,
                 "modalita_rientro": modalita_rientro,
                 "ddt_rientro": ddt_rientro,
-                "ritiro_impostato": ritiro_impostato or closed,
+                "ritiro_impostato": ritiro_impostato,
                 "rientrato": rientrato,
                 "colli": row["colli"],
                 "modello": safe_model(row["modello"]),

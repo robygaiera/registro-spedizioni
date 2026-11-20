@@ -31,6 +31,8 @@ const state = {
   filters: { q: '', month: '', stato: '', modello: '' },
   sort: { key: 'data_uscita', dir: 'desc' },
   view: 'tutte',
+  pickupDate: nextWorkingDay(todayISO()),
+  pickupShowDone: false,
   visible: STEP,
   loading: false,
   saving: false,
@@ -66,6 +68,14 @@ const el = {
   filterHint: $('#filter-hint'),
   sortMobile: $('#sort-mobile'),
   emptyTitle: $('#empty-state .empty-title'),
+  emptyText: $('#empty-state .muted'),
+  pickupBar: $('#pickup-bar'),
+  pickupPrev: $('#pickup-prev'),
+  pickupNext: $('#pickup-next'),
+  pickupDateInput: $('#pickup-date-input'),
+  pickupLabel: $('#pickup-label'),
+  pickupShowDone: $('#pickup-show-done'),
+  pickupCount: $('#pickup-count'),
   exportBtn: $('#export'),
   newEntry: $('#new-entry'),
   resultCount: $('#result-count'),
@@ -287,6 +297,15 @@ function wireEvents() {
 
   $$('.view-tab').forEach((button) => {
     button.addEventListener('click', () => setView(button.dataset.view));
+  });
+
+  el.pickupPrev.addEventListener('click', () => setPickupDate(shiftWorkingDay(state.pickupDate, -1)));
+  el.pickupNext.addEventListener('click', () => setPickupDate(shiftWorkingDay(state.pickupDate, 1)));
+  el.pickupDateInput.addEventListener('change', () => setPickupDate(el.pickupDateInput.value));
+  el.pickupShowDone.addEventListener('change', () => {
+    state.pickupShowDone = el.pickupShowDone.checked;
+    state.visible = STEP;
+    render();
   });
 
   el.fRitiroFatto.addEventListener('change', () => handleTaskToggle('ritiro'));
@@ -662,6 +681,12 @@ function getFiltered() {
   const query = normalize(state.filters.q);
 
   const filtered = state.rows.filter((row) => {
+    if (state.view === 'ritiri') {
+      if (['Chiuso', 'Annullato'].includes(row.stato)) return false;
+      if (row.rientrato) return false;
+      if (row.data_ritiro !== state.pickupDate) return false;
+      if (!state.pickupShowDone && row.ritiro_impostato) return false;
+    }
     if (state.view === 'rientrare' && !['Aperto', 'Ritiro impostato'].includes(row.stato)) return false;
     if (state.view === 'da_chiudere' && row.stato !== 'Rientrato') return false;
     if (state.view === 'archivio' && !['Chiuso', 'Annullato'].includes(row.stato)) return false;
@@ -732,13 +757,53 @@ function render() {
 
   renderMeta(filtered);
   renderViews();
+  renderPickupBar();
   renderTable(filtered);
   renderSort();
   updateFilterChrome(filtered);
 }
 
+function pickupRows() {
+  return state.rows.filter((row) => (
+    row.data_ritiro === state.pickupDate
+    && !row.ritiro_impostato
+    && !row.rientrato
+    && !['Chiuso', 'Annullato'].includes(row.stato)
+  ));
+}
+
+function pickupDoneCount() {
+  return state.rows.filter((row) => (
+    row.data_ritiro === state.pickupDate
+    && row.ritiro_impostato
+    && !['Chiuso', 'Annullato'].includes(row.stato)
+  )).length;
+}
+
+function renderPickupBar() {
+  const visible = state.view === 'ritiri';
+  el.pickupBar.hidden = !visible;
+  if (!visible) return;
+
+  el.pickupLabel.textContent = longDate(state.pickupDate);
+  el.pickupDateInput.value = state.pickupDate;
+  el.pickupShowDone.checked = state.pickupShowDone;
+
+  const open = pickupRows().length;
+  const done = pickupDoneCount();
+
+  if (open === 0 && done === 0) {
+    el.pickupCount.textContent = 'Nessun ritiro';
+  } else if (open === 0) {
+    el.pickupCount.textContent = `0 da impostare · ${done} fatte`;
+  } else {
+    el.pickupCount.textContent = `${open} da impostare${done ? ` · ${done} fatte` : ''}`;
+  }
+}
+
 function renderViews() {
-  const counts = { tutte: state.rows.length, rientrare: 0, da_chiudere: 0, archivio: 0 };
+  const counts = { tutte: state.rows.length, ritiri: 0, rientrare: 0, da_chiudere: 0, archivio: 0 };
+  counts.ritiri = pickupRows().length;
 
   for (const row of state.rows) {
     if (row.stato === 'Aperto' || row.stato === 'Ritiro impostato') {
@@ -761,6 +826,20 @@ function renderViews() {
 }
 
 function renderMeta(rows) {
+  if (state.view === 'ritiri') {
+    const n = rows.length;
+    let text;
+    if (n === 0) {
+      text = 'Nessun ritiro da impostare';
+    } else if (state.pickupShowDone) {
+      text = `${nf.format(n)} ritiri per questa data`;
+    } else {
+      text = `${nf.format(n)} ${n === 1 ? 'ritiro' : 'ritiri'} da impostare`;
+    }
+    el.resultCount.textContent = text;
+    return;
+  }
+
   const total = state.rows.length;
   let text = rows.length === total
     ? `${nf.format(total)} spedizioni`
@@ -781,10 +860,21 @@ function renderTable(rows) {
   el.emptyState.hidden = !isEmpty;
 
   if (el.emptyTitle) {
-    el.emptyTitle.textContent = state.view === 'tutte'
-      ? 'Nessuna spedizione trovata'
-      : 'Nessuna spedizione in questa vista';
+    if (state.view === 'ritiri') {
+      el.emptyTitle.textContent = 'Nessun ritiro da impostare';
+      if (el.emptyText) {
+        el.emptyText.textContent = 'Per questa data non ci sono impostazioni da fare. Prova un altro giorno.';
+      }
+    } else {
+      el.emptyTitle.textContent = state.view === 'tutte'
+        ? 'Nessuna spedizione trovata'
+        : 'Nessuna spedizione in questa vista';
+      if (el.emptyText) {
+        el.emptyText.textContent = 'Prova a cambiare ricerca o filtri.';
+      }
+    }
   }
+  el.emptyReset.hidden = state.view === 'ritiri' && !hasFilters();
 
   const remaining = rows.length - visible.length;
   el.loadMore.hidden = remaining <= 0;
@@ -891,6 +981,7 @@ function resetFilters() {
 
 const VIEW_DEFAULTS = {
   tutte: { key: 'data_uscita', dir: 'desc' },
+  ritiri: { key: 'cliente', dir: 'asc' },
   rientrare: { key: 'data_uscita', dir: 'asc' },
   da_chiudere: { key: 'rientro_effettivo', dir: 'asc' },
   archivio: { key: 'data_uscita', dir: 'desc' },
@@ -900,6 +991,16 @@ function setView(view) {
   if (!VIEW_DEFAULTS[view] || state.view === view) return;
   state.view = view;
   state.sort = { ...VIEW_DEFAULTS[view] };
+  state.visible = STEP;
+  render();
+}
+
+function setPickupDate(date) {
+  if (!validDate(date)) {
+    el.pickupDateInput.value = state.pickupDate;
+    return;
+  }
+  state.pickupDate = date;
   state.visible = STEP;
   render();
 }
@@ -1336,6 +1437,44 @@ function fmtNumeric(iso) {
 function itDate(iso) {
   const [year, month, day] = iso.split('-');
   return `${day}/${month}/${year}`;
+}
+
+function parseISO(iso) {
+  const [year, month, day] = iso.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function toISO(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function nextWorkingDay(iso) {
+  const date = parseISO(iso);
+  do {
+    date.setDate(date.getDate() + 1);
+  } while (date.getDay() === 0 || date.getDay() === 6);
+  return toISO(date);
+}
+
+function shiftWorkingDay(iso, delta) {
+  const date = parseISO(iso);
+  do {
+    date.setDate(date.getDate() + delta);
+  } while (date.getDay() === 0 || date.getDay() === 6);
+  return toISO(date);
+}
+
+function longDate(iso) {
+  const text = parseISO(iso).toLocaleDateString('it-IT', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function todayISO() {

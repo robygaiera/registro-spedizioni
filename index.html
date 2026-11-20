@@ -116,9 +116,29 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
     <main class="shell">
       <div class="views" aria-label="Viste del registro">
         <button class="view-tab is-active" type="button" aria-pressed="true" data-view="tutte">Tutte <span class="view-count" data-count="tutte">—</span></button>
+        <button class="view-tab" type="button" aria-pressed="false" data-view="ritiri">Ritiri da impostare <span class="view-count" data-count="ritiri">—</span></button>
         <button class="view-tab" type="button" aria-pressed="false" data-view="rientrare">Da rientrare <span class="view-count" data-count="rientrare">—</span></button>
         <button class="view-tab" type="button" aria-pressed="false" data-view="da_chiudere">Da chiudere <span class="view-count" data-count="da_chiudere">—</span></button>
         <button class="view-tab" type="button" aria-pressed="false" data-view="archivio">Archivio <span class="view-count" data-count="archivio">—</span></button>
+      </div>
+
+      <div id="pickup-bar" class="pickup-bar" hidden>
+        <button id="pickup-prev" class="icon-btn pickup-nav" type="button" aria-label="Giorno precedente">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="pickup-date-wrap">
+          <p class="eyebrow">Ritiri da impostare</p>
+          <strong id="pickup-label">—</strong>
+        </div>
+        <button id="pickup-next" class="icon-btn pickup-nav" type="button" aria-label="Giorno successivo">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <input type="date" id="pickup-date-input" class="pickup-date-input" aria-label="Scegli la data dei ritiri">
+        <label class="pickup-toggle">
+          <input type="checkbox" id="pickup-show-done">
+          Mostra anche completati
+        </label>
+        <span id="pickup-count" class="pickup-count"></span>
       </div>
 
       <div class="toolbar">

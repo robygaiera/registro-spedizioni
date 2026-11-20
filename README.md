@@ -128,7 +128,8 @@ Deve mostrare `private/` come ignorata. Se `private/seed.sql` o `private/registr
 
 - **Cercare**: la barra cerca in cliente, destinazione, offerta, modello, modalità di rientro, DDT, note e date.
 - **Filtrare**: mese, stato (Aperto/Ritiro impostato/Rientrato/Chiuso/Annullato), modello. Il pulsante **Azzera** rimuove i filtri ma non cambia la vista.
-- **Viste**: in alto scegli **Tutte**, **Da rientrare**, **Da chiudere** o **Archivio**. I numeri accanto sono i totali.
+- **Viste**: in alto scegli **Tutte**, **Ritiri da impostare**, **Da rientrare**, **Da chiudere** o **Archivio**. I numeri accanto sono i totali.
+- **Ritiri da impostare**: vista giornaliera. Di default apre il primo giorno lavorativo successivo a oggi (se oggi è lunedì 23, mostra martedì 24). Le frecce cambiano giorno, il campo data permette una data precisa; **Mostra anche completati** include le spunte già fatte. Spuntando **Imp. ritiro** la riga esce dalla lista.
 - **Modificare**: clic su una riga → pannello laterale → **Salva**. Modifiche immediate per tutti.
 - **Due spunte**: nel pannello, **Impostazione ritiro** e **Rientrato**. Lo stato si aggiorna da solo: nessuna spunta = Aperto, prima spunta = Ritiro impostato, seconda = Rientrato.
 - **Date**: la data accanto a **Impostazione ritiro** è il giorno in cui è stato impostato il ritiro (primo giorno lavorativo dopo l’offerta). La data accanto a **Rientrato** è il giorno in cui il materiale è tornato.
@@ -159,7 +160,7 @@ Lo stato non si sceglie da un menu: deriva dalle due spunte. **Chiudi pratica** 
 
 Nel foglio Excel le righe chiuse sono **barrate** (`BARRATO = c'è il DDT di chiusura`). Il seed interpreta come chiusa una riga con almeno 5 celle barrate su 7, oppure con una nota che contiene "chiuso", "rientrato", "riconsegnato" o "annullato". Sono 192 righe su 875.
 
-Delle 683 righe aperte, 672 hanno già una data di impostazione ritiro e dopo la migrazione risultano **Ritiro impostato**; 11 non hanno la data e restano **Aperte**. La vista **Da rientrare** serve proprio a bonificare questo arretrato: apri la riga e spunta **Rientrato** quando il materiale è tornato.
+Delle 683 righe aperte, quelle con una data di impostazione già passata risultano **Ritiro impostato**; quelle con data odierna o futura restano **Aperte** e compaiono nella vista **Ritiri da impostare**. Le righe senza data restano **Aperte**. La vista **Da rientrare** serve a bonificare l’arretrato: apri la riga e spunta **Rientrato** quando il materiale è tornato.
 
 ---
 
@@ -173,7 +174,7 @@ Se la tabella `spedizioni` esiste già (come nel progetto online), esegui nel SQ
 supabase/migrations/002_rientri.sql
 ```
 
-Aggiunge i campi del rientro, le due spunte e lo stato **Ritiro impostato** senza cancellare nessun dato. È idempotente: se avevi già eseguito una versione precedente della migrazione, rieseguila. `schema.sql` serve invece per un’installazione nuova.
+Aggiunge i campi del rientro, le due spunte e lo stato **Ritiro impostato** senza cancellare nessun dato. Le impostazioni con data passata vengono segnate come fatte; quelle di oggi o future restano da fare. È idempotente: se avevi già eseguito una versione precedente della migrazione, rieseguila. `schema.sql` serve invece per un’installazione nuova.
 
 ### Riesportare dal file Excel
 
@@ -245,7 +246,7 @@ registro-spedizioni/
 | `rientro_effettivo` | date | quando il materiale è tornato in magazzino |
 | `modalita_rientro` | text | Etichetta nostra / A carico cliente / Ritiro nostro / Di persona / Altro |
 | `ddt_rientro` | text | numero DDT di rientro |
-| `ritiro_impostato` | boolean | prima spunta: impostazione ritiro confermata |
+| `ritiro_impostato` | boolean | prima spunta: impostazione confermata (date future: parte da `false`) |
 | `rientrato` | boolean | seconda spunta: materiale rientrato |
 | `colli` | integer | null se assente |
 | `modello` | text | normalizzato in maiuscolo |
