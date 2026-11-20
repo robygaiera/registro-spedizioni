@@ -10,11 +10,21 @@ create table if not exists public.spedizioni (
   cliente         text,
   numero_offerta  text,
   data_ritiro     date,
+  rientro_effettivo date,
+  modalita_rientro text
+                  check (
+                    modalita_rientro is null
+                    or modalita_rientro in (
+                      'Etichetta nostra', 'A carico cliente', 'Ritiro nostro',
+                      'Di persona', 'Altro'
+                    )
+                  ),
+  ddt_rientro     text,
   colli           integer check (colli is null or colli >= 0),
   modello         text,
   cauzione        text,
   stato           text not null default 'Aperto'
-                  check (stato in ('Aperto', 'Chiuso', 'Annullato')),
+                  check (stato in ('Aperto', 'Rientrato', 'Chiuso', 'Annullato')),
   note            text,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
@@ -30,6 +40,17 @@ create index if not exists spedizioni_cliente_idx
   on public.spedizioni (lower(cliente));
 create index if not exists spedizioni_stato_idx
   on public.spedizioni (stato);
+create index if not exists spedizioni_data_ritiro_idx
+  on public.spedizioni (data_ritiro);
+create index if not exists spedizioni_rientro_effettivo_idx
+  on public.spedizioni (rientro_effettivo);
+
+comment on column public.spedizioni.data_ritiro is
+  'Data prevista di rientro del materiale';
+comment on column public.spedizioni.rientro_effettivo is
+  'Data in cui il materiale e rientrato in magazzino';
+comment on column public.spedizioni.modalita_rientro is
+  'Etichetta nostra / A carico cliente / Ritiro nostro / Di persona / Altro';
 
 -- ------------------------------------------------------------
 -- updated_at automatico
