@@ -577,13 +577,13 @@ th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--ink-2); }
 
 .col-tasks { width: 102px; }
 .col-date { width: 92px; }
-.col-client { width: 28%; }
+.col-client { width: 24%; }
+.col-notes { width: 190px; }
 .col-offer { width: 104px; }
 .col-pickup { width: 128px; }
 .col-packages { width: 62px; text-align: right; }
 .col-model { width: 148px; }
 .col-status { width: 118px; }
-.col-notes { width: auto; }
 
 tbody td {
   height: 54px;
