@@ -1,6 +1,6 @@
 /* ============================================================
-   Alfred · Registro spedizioni 2026
-   Stessa linea di SilentsystemDesk: crema, sidebar scura, arancio.
+   Registro spedizioni 2026
+   Linea grafica SilentsystemDesk: crema, sidebar scura, arancio.
    ============================================================ */
 
 :root {
@@ -219,8 +219,37 @@ select {
   background: #191715;
   box-shadow: 0 22px 65px rgba(0, 0, 0, .45);
 }
-.auth-brand { margin-bottom: 26px; }
-.auth-brand img { display: block; width: auto; height: 52px; max-width: 100%; }
+.brand-symbol {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 7px;
+  background: var(--orange);
+  color: #fff;
+  font: 800 13px/1 var(--mono);
+  letter-spacing: -.02em;
+}
+.brand-symbol-lg { width: 40px; height: 40px; flex-basis: 40px; font-size: 15px; }
+
+.auth-brand { display: flex; align-items: center; gap: 11px; margin-bottom: 26px; }
+.auth-brand .brand-symbol { width: 38px; height: 38px; flex-basis: 38px; font-size: 14px; }
+.brand-wordmark {
+  color: #f4ede4;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.brand-wordmark small {
+  display: block;
+  margin-top: 4px;
+  color: #9d958b;
+  font: 400 8px var(--mono);
+  letter-spacing: .1em;
+}
 .auth-card h1 {
   margin: 8px 0 7px;
   color: #f5f1eb;
@@ -275,7 +304,6 @@ select {
   box-shadow: var(--shadow-md);
 }
 .setup-head { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
-.setup-logo { width: auto; height: 40px; }
 .setup-head h1 { margin-top: 3px; font-size: 25px; font-weight: 800; letter-spacing: -.045em; }
 .setup-intro { margin-bottom: 20px; font-size: 12px; line-height: 1.65; }
 .steps { margin: 0 0 20px; padding: 0 0 0 20px; color: #5b534b; font-size: 12px; line-height: 1.65; }
@@ -320,8 +348,22 @@ code {
   border-right: 1px solid #37322c;
 }
 .sidebar-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.sidebar-brand { display: block; margin: 0 6px 34px; }
-.sidebar-brand img { display: block; width: auto; height: 34px; max-width: 100%; }
+.sidebar-brand { display: flex; align-items: center; gap: 10px; margin: 0 6px 32px; }
+.sidebar-brand .brand-symbol { width: 34px; height: 34px; }
+.sidebar-brand-text { display: grid; gap: 3px; min-width: 0; }
+.sidebar-brand-text b {
+  color: #f4ede4;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.sidebar-brand-text small {
+  color: #91877a;
+  font: 400 8px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
 .sidebar-close { display: none; }
 .side-caption {
   padding: 0 10px 10px;
@@ -1054,7 +1096,7 @@ body.drawer-open { overflow: hidden; }
   }
   .sidebar.sidebar-open { transform: translateX(0); visibility: visible; transition: transform .2s ease, visibility 0s; }
   .sidebar-brand { margin-bottom: 24px; }
-  .sidebar-brand img { height: 32px; }
+  .sidebar-brand .brand-symbol { width: 32px; height: 32px; flex-basis: 32px; }
   .sidebar-close {
     display: grid;
     place-items: center;
@@ -1184,7 +1226,6 @@ body.drawer-open { overflow: hidden; }
   .auth-card { padding: 24px 20px; }
   .setup-card { padding: 24px 20px; }
   .setup-head { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .setup-logo { height: 34px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -176,7 +176,7 @@ function isConfigured() {
 }
 
 function initChrome() {
-  document.title = `Alfred · ${APP_TITLE} ${APP_YEAR}`;
+  document.title = `${APP_TITLE} ${APP_YEAR} · Silentsystem`;
   const title = $('#app-title');
   const year = $('#app-year');
   if (title) title.textContent = APP_TITLE;
