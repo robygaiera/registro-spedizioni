@@ -20,11 +20,12 @@ create table if not exists public.spedizioni (
                     )
                   ),
   ddt_rientro     text,
+  ritiro_impostato boolean not null default false,
+  rientrato       boolean not null default false,
   colli           integer check (colli is null or colli >= 0),
   modello         text,
-  cauzione        text,
   stato           text not null default 'Aperto'
-                  check (stato in ('Aperto', 'Rientrato', 'Chiuso', 'Annullato')),
+                  check (stato in ('Aperto', 'Ritiro impostato', 'Rientrato', 'Chiuso', 'Annullato')),
   note            text,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
@@ -46,11 +47,15 @@ create index if not exists spedizioni_rientro_effettivo_idx
   on public.spedizioni (rientro_effettivo);
 
 comment on column public.spedizioni.data_ritiro is
-  'Data prevista di rientro del materiale';
+  'Data di impostazione del ritiro (primo giorno lavorativo post offerta)';
 comment on column public.spedizioni.rientro_effettivo is
   'Data in cui il materiale e rientrato in magazzino';
 comment on column public.spedizioni.modalita_rientro is
   'Etichetta nostra / A carico cliente / Ritiro nostro / Di persona / Altro';
+comment on column public.spedizioni.ritiro_impostato is
+  'Spunta: impostazione del ritiro confermata';
+comment on column public.spedizioni.rientrato is
+  'Spunta: materiale rientrato in magazzino';
 
 -- ------------------------------------------------------------
 -- updated_at automatico
