@@ -126,21 +126,56 @@ Deve mostrare `private/` come ignorata. Se `private/seed.sql` o `private/registr
 
 ## 4. Uso quotidiano
 
-- **Cercare**: la barra cerca in cliente, indirizzo, offerta, modello, cauzione, note e date.
-- **Filtrare**: mese, stato (Aperto/Chiuso/Annullato), modello. Il pulsante **Azzera** rimuove tutto.
+- **Cercare**: la barra cerca in cliente, destinazione, offerta, modello, modalità di rientro, DDT, note e date.
+- **Filtrare**: mese, stato (Aperto/Ritiro impostato/Rientrato/Chiuso/Annullato), modello. Il pulsante **Azzera** rimuove i filtri ma non cambia la vista.
+- **Viste**: in alto scegli **Tutte**, **Da rientrare**, **Da chiudere** o **Archivio**. I numeri accanto sono i totali.
 - **Modificare**: clic su una riga → pannello laterale → **Salva**. Modifiche immediate per tutti.
-- **Aggiungere**: **Nuova spedizione**. Almeno uno tra cliente e indirizzo è obbligatorio.
+- **Due spunte**: nel pannello, **Impostazione ritiro** e **Rientrato**. Lo stato si aggiorna da solo: nessuna spunta = Aperto, prima spunta = Ritiro impostato, seconda = Rientrato.
+- **Date**: la data accanto a **Impostazione ritiro** è il giorno in cui è stato impostato il ritiro (primo giorno lavorativo dopo l’offerta). La data accanto a **Rientrato** è il giorno in cui il materiale è tornato.
+- **Chiudere**: **Chiudi pratica** porta la riga in **Archivio** con stato Chiuso.
+- **Righe rientrate**: quando la spunta **Rientrato** è attiva, l’intera riga diventa grigia.
+- **Aggiungere**: **Nuova spedizione**. Almeno uno tra cliente e destinazione è obbligatorio.
 - **Eliminare**: dal pannello di modifica, pulsante **Elimina** (chiede conferma).
 - **Esportare**: **CSV** esporta le righe attualmente filtrate, con separatore `;` e accenti corretti per Excel/Numbers.
 - **Aggiornare**: il registro si ricarica da solo quando torni sulla finestra dopo 45 secondi. Il pulsante circolare forza l'aggiornamento.
 
-### Stato "Chiuso" iniziale
+### Ciclo di vita di una spedizione
 
-Nel foglio Excel le righe chiuse sono **barrate** (`BARRATO = c'è il DDT di chiusura`). Il seed interpreta come chiusa una riga con almeno 5 celle barrate su 7, oppure con una nota che contiene "chiuso", "rientrato", "riconsegnato" o "annullato". Sono 192 righe su 875. Tutte le altre risultano **Aperte**: correggile man mano dal cruscotto.
+```text
+Aperto  ->  Ritiro impostato  ->  Rientrato  ->  Chiuso
+   \_________________________________________________/
+                     Annullato
+```
+
+- **Aperto**: materiale fuori, impostazione del ritiro non ancora confermata.
+- **Ritiro impostato**: etichetta o ritiro organizzato, materiale ancora fuori.
+- **Rientrato**: materiale tornato in magazzino; la riga diventa grigia.
+- **Chiuso**: tutto verificato e archiviato; la riga resta grigia.
+- **Annullato**: spedizione annullata.
+
+Lo stato non si sceglie da un menu: deriva dalle due spunte. **Chiudi pratica** è l’unica azione che porta esplicitamente a Chiuso.
+
+### Stato iniziale dei dati importati
+
+Nel foglio Excel le righe chiuse sono **barrate** (`BARRATO = c'è il DDT di chiusura`). Il seed interpreta come chiusa una riga con almeno 5 celle barrate su 7, oppure con una nota che contiene "chiuso", "rientrato", "riconsegnato" o "annullato". Sono 192 righe su 875.
+
+Delle 683 righe aperte, 672 hanno già una data di impostazione ritiro e dopo la migrazione risultano **Ritiro impostato**; 11 non hanno la data e restano **Aperte**. La vista **Da rientrare** serve proprio a bonificare questo arretrato: apri la riga e spunta **Rientrato** quando il materiale è tornato.
 
 ---
 
 ## 5. Aggiornare i dati dall'Excel
+
+### Progetto già online: applica la migrazione
+
+Se la tabella `spedizioni` esiste già (come nel progetto online), esegui nel SQL Editor:
+
+```text
+supabase/migrations/002_rientri.sql
+```
+
+Aggiunge i campi del rientro, le due spunte e lo stato **Ritiro impostato** senza cancellare nessun dato. È idempotente: se avevi già eseguito una versione precedente della migrazione, rieseguila. `schema.sql` serve invece per un’installazione nuova.
+
+### Riesportare dal file Excel
 
 Il file Excel resta la fonte iniziale. Per riestrarre:
 
@@ -155,7 +190,8 @@ Genera:
 | `private/registro-2026.json` | dati reali completi | ignorato |
 | `private/seed.sql` | INSERT SQL con dati reali | ignorato |
 | `data/demo.json` | stessi volumi, ma nomi/indirizzi/note finti | versionato |
-| `supabase/schema.sql` | struttura e sicurezza | versionato |
+| `supabase/schema.sql` | struttura e sicurezza per installazione nuova | versionato |
+| `supabase/migrations/002_rientri.sql` | aggiornamento del database esistente | versionato |
 
 Per **sostituire** i dati su Supabase (dopo un backup CSV):
 
@@ -183,7 +219,9 @@ registro-spedizioni/
 ├── data/
 │   └── demo.json           dati finti per la demo (versionati)
 ├── supabase/
-│   └── schema.sql          tabella, indici, trigger, RLS
+│   ├── schema.sql          tabella, indici, trigger, RLS (installazione nuova)
+│   └── migrations/
+│       └── 002_rientri.sql aggiornamento del database esistente
 ├── tools/
 │   └── build_data.py       Excel -> seed + demo
 ├── private/                DATI REALI - ignorata da git
@@ -200,16 +238,22 @@ registro-spedizioni/
 |---|---|---|
 | `id` | uuid | generato dal database |
 | `data_uscita` | date | può essere vuota |
-| `indirizzo` | text | destinazione / fermo deposito |
+| `indirizzo` | text | **destinazione**: ragione sociale o nome (non l'indirizzo fisico) |
 | `cliente` | text | nome cliente reale |
 | `numero_offerta` | text | numeri e sigle DDT |
-| `data_ritiro` | date | può essere vuota |
+| `data_ritiro` | date | **impostazione ritiro**: primo giorno lavorativo post offerta |
+| `rientro_effettivo` | date | quando il materiale è tornato in magazzino |
+| `modalita_rientro` | text | Etichetta nostra / A carico cliente / Ritiro nostro / Di persona / Altro |
+| `ddt_rientro` | text | numero DDT di rientro |
+| `ritiro_impostato` | boolean | prima spunta: impostazione ritiro confermata |
+| `rientrato` | boolean | seconda spunta: materiale rientrato |
 | `colli` | integer | null se assente |
 | `modello` | text | normalizzato in maiuscolo |
-| `cauzione` | text | importo, `NO`, `ONLINE`… |
-| `stato` | text | Aperto / Chiuso / Annullato |
+| `stato` | text | Aperto / Ritiro impostato / Rientrato / Chiuso / Annullato |
 | `note` | text | note operative |
 | `created_at`, `updated_at`, `created_by` | | tracciati dal database |
+
+> Il campo `indirizzo` conserva il nome storico della colonna Excel, ma contiene sempre la **destinazione** (ragione sociale o nome), non un indirizzo stradale. La vecchia colonna `cauzione` non è più usata dall’interfaccia: se esiste ancora nel database resta solo per storico.
 
 ---
 

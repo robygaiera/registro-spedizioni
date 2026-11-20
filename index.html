@@ -114,10 +114,17 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
     </div>
 
     <main class="shell">
+      <div class="views" aria-label="Viste del registro">
+        <button class="view-tab is-active" type="button" aria-pressed="true" data-view="tutte">Tutte <span class="view-count" data-count="tutte">—</span></button>
+        <button class="view-tab" type="button" aria-pressed="false" data-view="rientrare">Da rientrare <span class="view-count" data-count="rientrare">—</span></button>
+        <button class="view-tab" type="button" aria-pressed="false" data-view="da_chiudere">Da chiudere <span class="view-count" data-count="da_chiudere">—</span></button>
+        <button class="view-tab" type="button" aria-pressed="false" data-view="archivio">Archivio <span class="view-count" data-count="archivio">—</span></button>
+      </div>
+
       <div class="toolbar">
         <div class="search-wrap">
           <svg class="search-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input id="search" type="search" placeholder="Cerca cliente, indirizzo, offerta, modello, note…" autocomplete="off">
+          <input id="search" type="search" placeholder="Cerca cliente, destinazione, offerta, modello, note…" autocomplete="off">
         </div>
 
         <select id="filter-month" aria-label="Filtra per mese">
@@ -126,6 +133,8 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
         <select id="filter-stato" aria-label="Filtra per stato">
           <option value="">Tutti gli stati</option>
           <option value="Aperto">Aperti</option>
+          <option value="Ritiro impostato">Ritiro impostato</option>
+          <option value="Rientrato">Rientrati</option>
           <option value="Chiuso">Chiusi</option>
           <option value="Annullato">Annullati</option>
         </select>
@@ -152,6 +161,8 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
         <select id="sort-mobile" aria-label="Ordina il registro">
           <option value="data_uscita:desc">Più recenti</option>
           <option value="data_uscita:asc">Più vecchie</option>
+          <option value="data_ritiro:asc">Impostazione ritiro</option>
+          <option value="rientro_effettivo:asc">Rientro effettivo</option>
           <option value="cliente:asc">Cliente A–Z</option>
           <option value="colli:desc">Più colli</option>
           <option value="modello:asc">Modello A–Z</option>
@@ -168,13 +179,13 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
         <table id="table">
           <thead>
             <tr>
+              <th class="col-tasks">Spunte</th>
               <th class="col-date" aria-sort="none"><button class="sort-btn" data-sort="data_uscita">Data uscita<span class="arrow"></span></button></th>
-              <th class="col-client"><button class="sort-btn" data-sort="cliente">Cliente<span class="arrow"></span></button></th>
+              <th class="col-client"><button class="sort-btn" data-sort="cliente">Cliente / destinazione<span class="arrow"></span></button></th>
               <th class="col-offer">N. offerta</th>
-              <th class="col-pickup"><button class="sort-btn" data-sort="data_ritiro">Ritiro<span class="arrow"></span></button></th>
+              <th class="col-pickup"><button class="sort-btn" data-sort="data_ritiro">Ritiro / rientro<span class="arrow"></span></button></th>
               <th class="col-packages"><button class="sort-btn" data-sort="colli">Colli<span class="arrow"></span></button></th>
               <th class="col-model"><button class="sort-btn" data-sort="modello">Modello<span class="arrow"></span></button></th>
-              <th class="col-deposit">Cauzione</th>
               <th class="col-status"><button class="sort-btn" data-sort="stato">Stato<span class="arrow"></span></button></th>
               <th class="col-notes">Note</th>
             </tr>
@@ -202,9 +213,12 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
   <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
   <aside id="drawer" class="drawer" aria-hidden="true" aria-labelledby="drawer-title">
     <div class="drawer-head">
-      <div>
+      <div class="drawer-head-main">
         <p class="eyebrow">Registro 2026</p>
-        <h2 id="drawer-title">Modifica spedizione</h2>
+        <div class="drawer-title-row">
+          <h2 id="drawer-title">Modifica spedizione</h2>
+          <span id="drawer-stato" class="badge badge-open">Aperto</span>
+        </div>
       </div>
       <button id="drawer-close" class="icon-btn" type="button" aria-label="Chiudi">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -214,16 +228,35 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
     <form id="entry-form" class="drawer-body" novalidate>
       <input type="hidden" id="f-id">
 
-      <div class="form-grid">
-        <label class="field">
-          <span>Data uscita</span>
-          <input type="date" id="f-data-uscita">
-        </label>
-        <label class="field">
-          <span>Data ritiro</span>
-          <input type="date" id="f-data-ritiro">
-        </label>
+      <div class="task-list">
+        <div class="task-row" id="task-ritiro">
+          <label class="task-main">
+            <input type="checkbox" id="f-ritiro-fatto">
+            <span class="task-box" aria-hidden="true"></span>
+            <span class="task-label">Impostazione ritiro</span>
+          </label>
+          <input type="date" id="f-data-ritiro" class="task-date" aria-label="Data impostazione ritiro">
+        </div>
+        <div class="task-row" id="task-rientrato">
+          <label class="task-main">
+            <input type="checkbox" id="f-rientrato">
+            <span class="task-box" aria-hidden="true"></span>
+            <span class="task-label">Rientrato</span>
+          </label>
+          <input type="date" id="f-rientro-effettivo" class="task-date" aria-label="Data rientro effettivo">
+        </div>
       </div>
+
+      <div id="quick-actions" class="quick-actions" hidden>
+        <button id="quick-close" class="btn btn-ghost btn-sm" type="button">Chiudi pratica</button>
+      </div>
+
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+
+      <label class="field">
+        <span>Data uscita</span>
+        <input type="date" id="f-data-uscita">
+      </label>
 
       <label class="field">
         <span>Cliente</span>
@@ -231,8 +264,8 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
       </label>
 
       <label class="field">
-        <span>Indirizzo spedizione</span>
-        <input type="text" id="f-indirizzo" placeholder="Destinazione o fermo deposito" autocomplete="off">
+        <span>Destinazione</span>
+        <input type="text" id="f-indirizzo" placeholder="Ragione sociale o nome della destinazione" autocomplete="off">
       </label>
 
       <div class="form-grid">
@@ -254,16 +287,19 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
 
       <div class="form-grid">
         <label class="field">
-          <span>Cauzione</span>
-          <input type="text" id="f-cauzione" placeholder="Importo, NO, ONLINE…" autocomplete="off">
+          <span>Modalità rientro</span>
+          <select id="f-modalita">
+            <option value="">—</option>
+            <option value="Etichetta nostra">Etichetta nostra</option>
+            <option value="A carico cliente">A carico cliente</option>
+            <option value="Ritiro nostro">Ritiro nostro</option>
+            <option value="Di persona">Di persona</option>
+            <option value="Altro">Altro</option>
+          </select>
         </label>
         <label class="field">
-          <span>Stato</span>
-          <select id="f-stato">
-            <option value="Aperto">Aperto</option>
-            <option value="Chiuso">Chiuso</option>
-            <option value="Annullato">Annullato</option>
-          </select>
+          <span>DDT rientro</span>
+          <input type="text" id="f-ddt-rientro" placeholder="Numero DDT di rientro" autocomplete="off">
         </label>
       </div>
 
@@ -272,8 +308,7 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';</pre>
         <textarea id="f-note" rows="4" placeholder="Note operative, DDT, rientri…"></textarea>
       </label>
 
-      <p id="form-error" class="form-error" role="alert" hidden></p>
-      <p class="fineprint form-hint">I campi data e colli possono restare vuoti. Almeno uno tra cliente e indirizzo è obbligatorio.</p>
+      <p class="fineprint form-hint">Lo stato si aggiorna dalle due spunte: Aperto → Ritiro impostato → Rientrato. “Chiudi pratica” archivia la riga. Almeno uno tra cliente e destinazione è obbligatorio.</p>
     </form>
 
     <div class="drawer-foot">

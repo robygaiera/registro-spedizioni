@@ -30,10 +30,14 @@ const state = {
   rows: [],
   filters: { q: '', month: '', stato: '', modello: '' },
   sort: { key: 'data_uscita', dir: 'desc' },
+  view: 'tutte',
   visible: STEP,
   loading: false,
   saving: false,
   editingId: null,
+  initialStato: 'Aperto',
+  initialFlags: { ritiro: false, rientrato: false },
+  rowTasksPending: new Set(),
   lastFocus: null,
   lastLoad: 0,
 };
@@ -61,6 +65,7 @@ const el = {
   resetFilters: $('#reset-filters'),
   filterHint: $('#filter-hint'),
   sortMobile: $('#sort-mobile'),
+  emptyTitle: $('#empty-state .empty-title'),
   exportBtn: $('#export'),
   newEntry: $('#new-entry'),
   resultCount: $('#result-count'),
@@ -86,10 +91,19 @@ const el = {
   fOfferta: $('#f-offerta'),
   fColli: $('#f-colli'),
   fModello: $('#f-modello'),
-  fCauzione: $('#f-cauzione'),
-  fStato: $('#f-stato'),
+  fRitiroFatto: $('#f-ritiro-fatto'),
+  fRientrato: $('#f-rientrato'),
+  fDataRitiro: $('#f-data-ritiro'),
+  fRientroEffettivo: $('#f-rientro-effettivo'),
+  fModalita: $('#f-modalita'),
+  fDdtRientro: $('#f-ddt-rientro'),
   fNote: $('#f-note'),
   formError: $('#form-error'),
+  drawerStato: $('#drawer-stato'),
+  taskRitiro: $('#task-ritiro'),
+  taskRientrato: $('#task-rientrato'),
+  quickActions: $('#quick-actions'),
+  quickClose: $('#quick-close'),
   entryDelete: $('#entry-delete'),
   entryCancel: $('#entry-cancel'),
   entrySave: $('#entry-save'),
@@ -271,6 +285,27 @@ function wireEvents() {
     render();
   });
 
+  $$('.view-tab').forEach((button) => {
+    button.addEventListener('click', () => setView(button.dataset.view));
+  });
+
+  el.fRitiroFatto.addEventListener('change', () => handleTaskToggle('ritiro'));
+  el.fRientrato.addEventListener('change', () => handleTaskToggle('rientrato'));
+  el.fDataRitiro.addEventListener('change', () => {
+    el.fRitiroFatto.checked = Boolean(el.fDataRitiro.value);
+    syncTaskUI();
+    updateDrawerState();
+    updateQuickActions();
+  });
+  el.fRientroEffettivo.addEventListener('change', () => {
+    el.fRientrato.checked = Boolean(el.fRientroEffettivo.value);
+    syncTaskUI();
+    updateDrawerState();
+    updateQuickActions();
+  });
+
+  el.quickClose.addEventListener('click', () => handleQuickAction());
+
   el.resetFilters.addEventListener('click', resetFilters);
   el.emptyReset.addEventListener('click', resetFilters);
   el.retry.addEventListener('click', () => loadRows());
@@ -298,12 +333,20 @@ function wireEvents() {
   });
 
   el.tbody.addEventListener('click', (event) => {
+    if (event.target.closest('.row-tasks')) return;
     const tr = event.target.closest('tr[data-id]');
     if (tr) openDrawer(state.rows.find((row) => row.id === tr.dataset.id) ?? null);
   });
 
+  el.tbody.addEventListener('change', (event) => {
+    const input = event.target.closest('input[data-row-task]');
+    if (!input) return;
+    handleRowTask(input.dataset.id, input.dataset.rowTask, input.checked);
+  });
+
   el.tbody.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
+    if (event.target.closest('.row-tasks')) return;
     const tr = event.target.closest('tr[data-id]');
     if (!tr) return;
     event.preventDefault();
@@ -537,11 +580,19 @@ async function loadRows({ silent = false } = {}) {
 
 function normalizeRow(row) {
   const out = { ...row };
-  out.stato = ['Aperto', 'Chiuso', 'Annullato'].includes(row.stato) ? row.stato : 'Aperto';
+  out.stato = ['Aperto', 'Ritiro impostato', 'Rientrato', 'Chiuso', 'Annullato'].includes(row.stato)
+    ? row.stato
+    : 'Aperto';
   out.data_uscita = validDate(row.data_uscita);
   out.data_ritiro = validDate(row.data_ritiro);
+  out.rientro_effettivo = validDate(row.rientro_effettivo);
+  out.ritiro_impostato = Boolean(row.ritiro_impostato ?? out.data_ritiro);
+  out.rientrato = Boolean(row.rientrato ?? ['Rientrato', 'Chiuso'].includes(out.stato));
 
-  for (const key of ['indirizzo', 'cliente', 'numero_offerta', 'modello', 'cauzione', 'note']) {
+  for (const key of [
+    'indirizzo', 'cliente', 'numero_offerta', 'modello',
+    'modalita_rientro', 'ddt_rientro', 'note',
+  ]) {
     out[key] = row[key] === null || row[key] === undefined || String(row[key]).trim() === ''
       ? null
       : String(row[key]).trim();
@@ -611,6 +662,10 @@ function getFiltered() {
   const query = normalize(state.filters.q);
 
   const filtered = state.rows.filter((row) => {
+    if (state.view === 'rientrare' && !['Aperto', 'Ritiro impostato'].includes(row.stato)) return false;
+    if (state.view === 'da_chiudere' && row.stato !== 'Rientrato') return false;
+    if (state.view === 'archivio' && !['Chiuso', 'Annullato'].includes(row.stato)) return false;
+
     if (state.filters.stato && row.stato !== state.filters.stato) return false;
     if (state.filters.modello && row.modello !== state.filters.modello) return false;
 
@@ -628,12 +683,16 @@ function getFiltered() {
         row.indirizzo,
         row.numero_offerta,
         row.modello,
-        row.cauzione,
         row.note,
         row.stato,
+        row.modalita_rientro,
+        row.ddt_rientro,
         row.data_uscita,
         row.data_uscita ? itDate(row.data_uscita) : '',
         row.data_ritiro,
+        row.data_ritiro ? itDate(row.data_ritiro) : '',
+        row.rientro_effettivo,
+        row.rientro_effettivo ? itDate(row.rientro_effettivo) : '',
         row.colli,
       ].filter(Boolean).join(' '));
       if (!haystack.includes(query)) return false;
@@ -659,7 +718,7 @@ function compareRows(a, b) {
   let cmp;
   if (key === 'colli') {
     cmp = Number(va) - Number(vb);
-  } else if (key === 'data_uscita' || key === 'data_ritiro') {
+  } else if (key === 'data_uscita' || key === 'data_ritiro' || key === 'rientro_effettivo') {
     cmp = String(va).localeCompare(String(vb));
   } else {
     cmp = collator.compare(String(va), String(vb));
@@ -672,9 +731,33 @@ function render() {
   const filtered = getFiltered();
 
   renderMeta(filtered);
+  renderViews();
   renderTable(filtered);
   renderSort();
   updateFilterChrome(filtered);
+}
+
+function renderViews() {
+  const counts = { tutte: state.rows.length, rientrare: 0, da_chiudere: 0, archivio: 0 };
+
+  for (const row of state.rows) {
+    if (row.stato === 'Aperto' || row.stato === 'Ritiro impostato') {
+      counts.rientrare += 1;
+    } else if (row.stato === 'Rientrato') {
+      counts.da_chiudere += 1;
+    } else if (row.stato === 'Chiuso' || row.stato === 'Annullato') {
+      counts.archivio += 1;
+    }
+  }
+
+  $$('.view-tab').forEach((button) => {
+    const view = button.dataset.view;
+    const count = button.querySelector('.view-count');
+    if (count) count.textContent = nf.format(counts[view] ?? 0);
+    const active = state.view === view;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
 }
 
 function renderMeta(rows) {
@@ -697,6 +780,12 @@ function renderTable(rows) {
   el.table.hidden = isEmpty;
   el.emptyState.hidden = !isEmpty;
 
+  if (el.emptyTitle) {
+    el.emptyTitle.textContent = state.view === 'tutte'
+      ? 'Nessuna spedizione trovata'
+      : 'Nessuna spedizione in questa vista';
+  }
+
   const remaining = rows.length - visible.length;
   el.loadMore.hidden = remaining <= 0;
   el.loadMore.textContent = `Mostra altre ${Math.min(STEP, remaining)}`;
@@ -704,12 +793,35 @@ function renderTable(rows) {
 
 function rowHtml(row) {
   const main = row.cliente ?? row.indirizzo ?? 'Senza nome';
-  const sub = row.cliente && row.indirizzo ? row.indirizzo : '';
-  const badge = row.stato === 'Chiuso'
-    ? 'badge-closed'
-    : row.stato === 'Annullato' ? 'badge-cancelled' : 'badge-open';
+  const sub = row.cliente && row.indirizzo ? `Dest. ${row.indirizzo}` : '';
+  const badge = badgeClass(row.stato);
+  const isReturned = Boolean(row.rientrato);
 
-  return `<tr data-id="${esc(row.id)}" tabindex="0" aria-label="Modifica ${esc(main)}">
+  let returnCell = '—';
+  if (row.rientro_effettivo || row.data_ritiro) {
+    returnCell = (row.rientro_effettivo
+      ? `<span class="return-eff">rientrato ${esc(fmtNumeric(row.rientro_effettivo))}</span>`
+      : '')
+      + (row.data_ritiro
+        ? `<span class="return-prev">imp. ${esc(fmtNumeric(row.data_ritiro))}</span>`
+        : '');
+  }
+
+  const returnEmpty = !row.data_ritiro && !row.rientro_effettivo;
+  const pending = state.rowTasksPending.has(row.id);
+  const taskCell = `<td class="col-tasks row-tasks" data-label="Spunte">
+    <label class="row-task" title="Impostazione ritiro">
+      <input type="checkbox" data-row-task="ritiro" data-id="${esc(row.id)}"${row.ritiro_impostato ? ' checked' : ''}${pending ? ' disabled' : ''}>
+      <span>Imp. ritiro</span>
+    </label>
+    <label class="row-task" title="Rientrato">
+      <input type="checkbox" data-row-task="rientrato" data-id="${esc(row.id)}"${row.rientrato ? ' checked' : ''}${pending ? ' disabled' : ''}>
+      <span>Rientrato</span>
+    </label>
+  </td>`;
+
+  return `<tr data-id="${esc(row.id)}" tabindex="0" aria-label="Modifica ${esc(main)}"${isReturned ? ' class="is-returned"' : ''}>
+    ${taskCell}
     <td class="col-date" data-label="Data">
       <span class="date-cell${row.data_uscita ? '' : ' is-empty'}">${row.data_uscita ? esc(fmtShort(row.data_uscita)) : '—'}</span>
     </td>
@@ -718,13 +830,22 @@ function rowHtml(row) {
       ${sub ? `<span class="client-sub">${esc(sub)}</span>` : ''}
     </td>
     <td class="col-offer offer-cell" data-label="Offerta"${row.numero_offerta ? '' : ' data-empty="true"'}>${row.numero_offerta ? esc(row.numero_offerta) : '—'}</td>
-    <td class="col-pickup pickup-cell" data-label="Ritiro"${row.data_ritiro ? '' : ' data-empty="true"'}>${row.data_ritiro ? esc(fmtShort(row.data_ritiro)) : '—'}</td>
+    <td class="col-pickup return-cell" data-label="Ritiro"${returnEmpty ? ' data-empty="true"' : ''}>${returnCell}</td>
     <td class="col-packages packages-cell" data-label="Colli"${row.colli === null ? ' data-empty="true"' : ''}>${row.colli === null ? '—' : esc(nf.format(row.colli))}</td>
     <td class="col-model model-cell" data-label="Modello"${row.modello ? '' : ' data-empty="true"'}>${row.modello ? esc(row.modello) : '—'}</td>
-    <td class="col-deposit deposit-cell" data-label="Cauzione"${row.cauzione ? '' : ' data-empty="true"'}>${row.cauzione ? esc(row.cauzione) : '—'}</td>
     <td class="col-status" data-label="Stato"><span class="badge ${badge}">${esc(row.stato)}</span></td>
     <td class="col-notes" data-label="Note"${row.note ? '' : ' data-empty="true"'}><span class="note-cell${row.note ? '' : ' is-empty'}" title="${esc(row.note ?? '')}">${row.note ? esc(row.note) : '—'}</span></td>
   </tr>`;
+}
+
+function badgeClass(stato) {
+  switch (stato) {
+    case 'Chiuso': return 'badge-closed';
+    case 'Rientrato': return 'badge-returned';
+    case 'Ritiro impostato': return 'badge-scheduled';
+    case 'Annullato': return 'badge-cancelled';
+    default: return 'badge-open';
+  }
 }
 
 function renderSort() {
@@ -768,6 +889,21 @@ function resetFilters() {
   render();
 }
 
+const VIEW_DEFAULTS = {
+  tutte: { key: 'data_uscita', dir: 'desc' },
+  rientrare: { key: 'data_uscita', dir: 'asc' },
+  da_chiudere: { key: 'rientro_effettivo', dir: 'asc' },
+  archivio: { key: 'data_uscita', dir: 'desc' },
+};
+
+function setView(view) {
+  if (!VIEW_DEFAULTS[view] || state.view === view) return;
+  state.view = view;
+  state.sort = { ...VIEW_DEFAULTS[view] };
+  state.visible = STEP;
+  render();
+}
+
 /* ------------------------------------------------------------------ */
 /* drawer / form                                                      */
 /* ------------------------------------------------------------------ */
@@ -775,6 +911,11 @@ function resetFilters() {
 function openDrawer(row) {
   state.lastFocus = document.activeElement;
   state.editingId = row?.id ?? null;
+  state.initialStato = row?.stato ?? 'Aperto';
+  state.initialFlags = {
+    ritiro: Boolean(row?.ritiro_impostato ?? row?.data_ritiro),
+    rientrato: Boolean(row?.rientrato ?? ['Rientrato', 'Chiuso'].includes(row?.stato)),
+  };
   el.formError.hidden = true;
 
   el.drawerTitle.textContent = row ? 'Modifica spedizione' : 'Nuova spedizione';
@@ -786,9 +927,18 @@ function openDrawer(row) {
   setField(el.fOfferta, row?.numero_offerta ?? '');
   setField(el.fColli, row?.colli ?? '');
   setField(el.fModello, row?.modello ?? '');
-  setField(el.fCauzione, row?.cauzione ?? '');
-  setField(el.fStato, row?.stato ?? 'Aperto');
+  setField(el.fRientroEffettivo, row?.rientro_effettivo ?? '');
+  setField(el.fModalita, row?.modalita_rientro ?? '');
+  setField(el.fDdtRientro, row?.ddt_rientro ?? '');
   setField(el.fNote, row?.note ?? '');
+  delete el.fDataRitiro.dataset.previous;
+  delete el.fRientroEffettivo.dataset.previous;
+
+  el.fRitiroFatto.checked = state.initialFlags.ritiro;
+  el.fRientrato.checked = state.initialFlags.rientrato;
+  syncTaskUI();
+  updateDrawerState();
+  updateQuickActions();
 
   el.entryDelete.hidden = !row;
   el.drawer.classList.add('is-open');
@@ -822,6 +972,147 @@ function setField(input, value) {
   input.value = value ?? '';
 }
 
+function syncTaskUI() {
+  el.taskRitiro.classList.toggle('is-done', el.fRitiroFatto.checked);
+  el.taskRientrato.classList.toggle('is-done', el.fRientrato.checked);
+}
+
+function handleTaskToggle(kind) {
+  if (kind === 'ritiro') {
+    if (el.fRitiroFatto.checked) {
+      el.fDataRitiro.value = el.fDataRitiro.dataset.previous
+        || el.fDataRitiro.value
+        || todayISO();
+      delete el.fDataRitiro.dataset.previous;
+    } else {
+      el.fDataRitiro.dataset.previous = el.fDataRitiro.value || '';
+      el.fDataRitiro.value = '';
+    }
+  }
+  if (kind === 'rientrato') {
+    if (el.fRientrato.checked) {
+      el.fRientroEffettivo.value = el.fRientroEffettivo.dataset.previous
+        || el.fRientroEffettivo.value
+        || todayISO();
+      delete el.fRientroEffettivo.dataset.previous;
+    } else {
+      el.fRientroEffettivo.dataset.previous = el.fRientroEffettivo.value || '';
+      el.fRientroEffettivo.value = '';
+    }
+  }
+  syncTaskUI();
+  updateDrawerState();
+  updateQuickActions();
+}
+
+async function handleRowTask(id, task, checked) {
+  if (state.rowTasksPending.has(id)) return;
+  const index = state.rows.findIndex((row) => row.id === id);
+  if (index < 0) return;
+
+  const previous = { ...state.rows[index] };
+  const row = { ...previous };
+  const today = todayISO();
+
+  if (task === 'ritiro') {
+    row.ritiro_impostato = checked;
+    row.data_ritiro = checked ? (row.data_ritiro || today) : null;
+  } else {
+    row.rientrato = checked;
+    row.rientro_effettivo = checked ? (row.rientro_effettivo || today) : null;
+  }
+  row.stato = row.rientrato
+    ? 'Rientrato'
+    : row.ritiro_impostato ? 'Ritiro impostato' : 'Aperto';
+
+  state.rowTasksPending.add(id);
+  state.rows[index] = row;
+  render();
+
+  try {
+    const updated = await store.update(id, {
+      ritiro_impostato: row.ritiro_impostato,
+      rientrato: row.rientrato,
+      data_ritiro: row.data_ritiro,
+      rientro_effettivo: row.rientro_effettivo,
+      stato: row.stato,
+    });
+    const current = state.rows.findIndex((item) => item.id === id);
+    if (current >= 0) state.rows[current] = normalizeRow(updated);
+    state.rowTasksPending.delete(id);
+    render();
+  } catch (err) {
+    console.error(err);
+    const current = state.rows.findIndex((item) => item.id === id);
+    if (current >= 0) state.rows[current] = previous;
+    state.rowTasksPending.delete(id);
+    render();
+    toast(dataError(err), { error: true });
+  }
+}
+
+function computeStato(flags) {
+  if (flags.rientrato) return 'Rientrato';
+  if (flags.ritiro) return 'Ritiro impostato';
+  return 'Aperto';
+}
+
+function currentStato() {
+  const flags = { ritiro: el.fRitiroFatto.checked, rientrato: el.fRientrato.checked };
+  const changed = flags.ritiro !== state.initialFlags.ritiro
+    || flags.rientrato !== state.initialFlags.rientrato;
+
+  if (!changed && ['Chiuso', 'Annullato'].includes(state.initialStato)) {
+    return state.initialStato;
+  }
+  return computeStato(flags);
+}
+
+function updateDrawerState() {
+  const stato = currentStato();
+  el.drawerStato.textContent = stato;
+  el.drawerStato.className = `badge ${badgeClass(stato)}`;
+}
+
+function updateQuickActions() {
+  const editing = Boolean(state.editingId);
+  const stato = currentStato();
+  el.quickActions.hidden = !editing || stato === 'Chiuso' || stato === 'Annullato';
+}
+
+async function handleQuickAction() {
+  if (!state.editingId || state.saving) return;
+
+  el.formError.hidden = true;
+  const payload = readForm();
+  if (!payload.cliente && !payload.indirizzo) {
+    showFormError('Inserisci almeno il cliente o la destinazione.');
+    el.fCliente.focus();
+    return;
+  }
+
+  const wasReturned = payload.rientrato;
+  payload.ritiro_impostato = true;
+  payload.rientrato = true;
+  if (!wasReturned) payload.rientro_effettivo = payload.rientro_effettivo || todayISO();
+  payload.stato = 'Chiuso';
+
+  setSaving(true);
+  try {
+    const updated = await store.update(state.editingId, payload);
+    const index = state.rows.findIndex((row) => row.id === state.editingId);
+    if (index >= 0) state.rows[index] = normalizeRow(updated);
+    closeDrawer();
+    render();
+    toast('Pratica chiusa');
+  } catch (err) {
+    console.error(err);
+    showFormError(dataError(err));
+  } finally {
+    setSaving(false);
+  }
+}
+
 async function handleSave(event) {
   event.preventDefault();
   if (state.saving) return;
@@ -829,7 +1120,7 @@ async function handleSave(event) {
 
   const payload = readForm();
   if (!payload.cliente && !payload.indirizzo) {
-    showFormError('Inserisci almeno il cliente o l\'indirizzo.');
+    showFormError('Inserisci almeno il cliente o la destinazione.');
     el.fCliente.focus();
     return;
   }
@@ -869,17 +1160,25 @@ function readForm() {
   const value = (input) => input.value.trim();
   const colliRaw = value(el.fColli);
   const modello = value(el.fModello);
+  const ritiroImpostato = el.fRitiroFatto.checked;
+  const rientrato = el.fRientrato.checked;
+  const dataRitiro = value(el.fDataRitiro) || null;
+  const rientroEffettivo = value(el.fRientroEffettivo) || null;
 
   return {
     data_uscita: value(el.fDataUscita) || null,
-    data_ritiro: value(el.fDataRitiro) || null,
+    data_ritiro: dataRitiro,
     cliente: value(el.fCliente) || null,
     indirizzo: value(el.fIndirizzo) || null,
     numero_offerta: value(el.fOfferta) || null,
     colli: colliRaw === '' ? null : Number(colliRaw),
     modello: modello ? modello.replace(/\s+/g, ' ').toUpperCase() : null,
-    cauzione: value(el.fCauzione) || null,
-    stato: el.fStato.value,
+    stato: currentStato(),
+    rientro_effettivo: rientroEffettivo,
+    modalita_rientro: value(el.fModalita) || null,
+    ddt_rientro: value(el.fDdtRientro) || null,
+    ritiro_impostato: ritiroImpostato,
+    rientrato,
     note: value(el.fNote) || null,
   };
 }
@@ -893,6 +1192,7 @@ function setSaving(saving) {
   state.saving = saving;
   el.entrySave.disabled = saving;
   el.entryDelete.disabled = saving;
+  el.quickClose.disabled = saving;
   el.entrySave.textContent = saving ? 'Salvataggio…' : 'Salva';
 }
 
@@ -947,20 +1247,25 @@ function exportCsv() {
   }
 
   const header = [
-    'Data uscita', 'Indirizzo', 'Cliente', 'N. offerta', 'Data ritiro',
-    'Colli', 'Modello', 'Cauzione', 'Stato', 'Note',
+    'Data uscita', 'Impostazione ritiro', 'Ritiro impostato', 'Rientro effettivo',
+    'Rientrato', 'Cliente', 'Destinazione', 'N. offerta', 'Colli', 'Modello',
+    'Modalità rientro', 'DDT rientro', 'Stato', 'Note',
   ];
   const lines = [header.join(';')];
   for (const row of rows) {
     lines.push([
       row.data_uscita ? itDate(row.data_uscita) : '',
-      row.indirizzo ?? '',
-      row.cliente ?? '',
-      row.numero_offerta ?? '',
       row.data_ritiro ? itDate(row.data_ritiro) : '',
+      row.ritiro_impostato ? 'Sì' : 'No',
+      row.rientro_effettivo ? itDate(row.rientro_effettivo) : '',
+      row.rientrato ? 'Sì' : 'No',
+      row.cliente ?? '',
+      row.indirizzo ?? '',
+      row.numero_offerta ?? '',
       row.colli ?? '',
       row.modello ?? '',
-      row.cauzione ?? '',
+      row.modalita_rientro ?? '',
+      row.ddt_rientro ?? '',
       row.stato,
       row.note ?? '',
     ].map(csvCell).join(';'));
@@ -1021,6 +1326,11 @@ function fmtShort(iso) {
   const [year, month, day] = iso.split('-');
   const name = MONTHS[Number(month) - 1];
   return name ? `${day} ${name} ${year.slice(2)}` : iso;
+}
+
+function fmtNumeric(iso) {
+  const [year, month, day] = iso.split('-');
+  return `${day}/${month}/${year.slice(2)}`;
 }
 
 function itDate(iso) {

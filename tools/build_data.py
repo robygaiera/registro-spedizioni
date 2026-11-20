@@ -23,7 +23,6 @@ FIRST_ROW = 26  # dove inizia il blocco 2026 nel foglio
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 # colonne del foglio 2026 (1-based)
-COL_CAUZIONE = 1
 COL_NOTE = 2
 COL_DATA_USCITA = 5
 COL_INDIRIZZO = 6
@@ -162,7 +161,6 @@ def main():
                 "data_ritiro": data_ritiro,
                 "colli": colli,
                 "modello": modello,
-                "cauzione": clean(get(r, COL_CAUZIONE)),
                 "stato": stato,
                 "note": note,
             }
@@ -208,7 +206,7 @@ def main():
         "end $$;",
         "",
         "insert into public.spedizioni",
-        "  (data_uscita, indirizzo, cliente, numero_offerta, data_ritiro, colli, modello, cauzione, stato, note)",
+        "  (data_uscita, indirizzo, cliente, numero_offerta, data_ritiro, colli, modello, stato, note)",
         "values",
     ]
     values = []
@@ -224,7 +222,6 @@ def main():
                     sql_literal(row["data_ritiro"]),
                     sql_literal(row["colli"]),
                     sql_literal(row["modello"]),
-                    sql_literal(row["cauzione"]),
                     sql_literal(row["stato"]),
                     sql_literal(row["note"]),
                 ]
@@ -233,6 +230,17 @@ def main():
         )
     seed.append(",\n".join(values) + ";")
     seed.append("")
+    seed.extend([
+        "-- Allinea le due spunte e lo stato ai dati importati",
+        "update public.spedizioni",
+        "set ritiro_impostato = (data_ritiro is not null),",
+        "    rientrato = (stato = 'Chiuso');",
+        "",
+        "update public.spedizioni",
+        "set stato = 'Ritiro impostato'",
+        "where stato = 'Aperto' and data_ritiro is not null;",
+        "",
+    ])
 
     (private_dir / "seed.sql").write_text("\n".join(seed), encoding="utf-8")
 
@@ -266,15 +274,13 @@ NOUNS = [
     "Fiamma", "Bosco", "Prisma", "Civico", "Metro", "Corso", "Isola",
     "Faro", "Riva", "Campo", "Musica", "Scena",
 ]
-STREETS = [
-    "Via Roma", "Via Garibaldi", "Corso Italia", "Via Dante", "Piazza Duomo",
-    "Viale Europa", "Via Verdi", "Via Manzoni", "Corso Buenos Aires",
-    "Via XX Settembre", "Piazza della Repubblica", "Via Mazzini",
-    "Viale Regina Margherita", "Via Leopardi", "Piazza Cavour",
-]
 CITIES = [
     "Milano", "Torino", "Bologna", "Firenze", "Roma", "Napoli", "Padova",
     "Verona", "Genova", "Bari", "Palermo", "Bergamo", "Modena", "Parma",
+]
+DEST_PREFIXES = [
+    "Fiera", "Hotel", "Teatro", "Magazzino", "Centro congressi",
+    "Palazzo", "Arena", "Villa", "Sede", "Studio",
 ]
 NOTES_CLOSED = [
     "DDT di chiusura registrato", "Rientrato in magazzino", "Chiuso con il corriere",
@@ -293,21 +299,6 @@ def safe_date(value):
     return None
 
 
-SAFE_DEPOSITS = {"NO", "ONLINE", "SÌ CASH", "SI CASH", "M", "E", "S", "R"}
-
-
-def safe_deposit(value):
-    """Tiene importi e stati brevi, scarta le note finite per errore nella colonna cauzione."""
-    if value is None:
-        return None
-    text = str(value).strip()
-    if re.fullmatch(r"\d{1,4}", text):
-        return text
-    if text.upper() in SAFE_DEPOSITS:
-        return text
-    return None
-
-
 def safe_model(value):
     """Scarta le celle modello che contengono annotazioni interne."""
     if value is None:
@@ -316,6 +307,10 @@ def safe_model(value):
     if len(text) > 30 or "DDT" in text.upper() or "EXTRA" in text.upper():
         return "ALTRO"
     return text
+
+
+def add_days(iso, days):
+    return (dt.date.fromisoformat(iso) + dt.timedelta(days=days)).isoformat()
 
 
 def anonymize(rows):
@@ -341,26 +336,53 @@ def anonymize(rows):
         name_by_client[key] = candidate
         return candidate
 
+    modes = ["Etichetta nostra", "A carico cliente", "Ritiro nostro", "Di persona"]
+
     out = []
     for i, row in enumerate(rows, start=1):
         closed = row["stato"] == "Chiuso"
         pool = NOTES_CLOSED if closed else NOTES_OPEN
         note = pool[i % len(pool)] or None
+
+        # Una parte delle righe chiuse diventa "Rientrato": serve a mostrare
+        # la vista "Da chiudere" nella demo.
+        ritiro_prev = safe_date(row["data_ritiro"])
+        ritiro_impostato = bool(ritiro_prev)
+        rientrato = closed
+        rientro_effettivo = None
+        modalita_rientro = None
+        ddt_rientro = None
+
+        if closed:
+            stato = "Rientrato" if i % 5 == 0 else "Chiuso"
+            base = ritiro_prev or safe_date(row["data_uscita"])
+            if base:
+                rientro_effettivo = add_days(base, (i % 7) + 1)
+            modalita_rientro = modes[i % len(modes)]
+            if stato == "Chiuso":
+                ddt_rientro = f"R-2026-{i:04d}"
+        else:
+            stato = "Ritiro impostato" if ritiro_impostato else "Aperto"
+
         out.append(
             {
                 "id": f"demo-{i:04d}",
                 "data_uscita": safe_date(row["data_uscita"]),
                 "indirizzo": (
-                    f"{STREETS[i % len(STREETS)]} {8 + (i * 7) % 120}, "
-                    f"{CITIES[(i * 3) % len(CITIES)]}"
+                    f"{DEST_PREFIXES[i % len(DEST_PREFIXES)]} Demo "
+                    f"{CITIES[(i * 5) % len(CITIES)]}"
                 ),
                 "cliente": fake_name(row["cliente"], i) if row["cliente"] else None,
                 "numero_offerta": str(200000 + i),
-                "data_ritiro": safe_date(row["data_ritiro"]),
+                "data_ritiro": ritiro_prev,
+                "rientro_effettivo": rientro_effettivo,
+                "modalita_rientro": modalita_rientro,
+                "ddt_rientro": ddt_rientro,
+                "ritiro_impostato": ritiro_impostato or closed,
+                "rientrato": rientrato,
                 "colli": row["colli"],
                 "modello": safe_model(row["modello"]),
-                "cauzione": safe_deposit(row["cauzione"]),
-                "stato": row["stato"],
+                "stato": stato,
                 "note": note,
             }
         )
